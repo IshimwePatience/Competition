@@ -1,5 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../api/client';
+import {
+  DataTable,
+  TableActionButton,
+  TableAvatar,
+  TableCell,
+  TableEmpty,
+  TablePanel,
+  TablePrimaryCell,
+  TableRow,
+} from '../ui/DataTable';
 
 const FACILITY_TYPES = ['pharmacy', 'clinic', 'hospital', 'emergency'];
 
@@ -221,72 +231,98 @@ export default function AdminWidgets({ page = 'facilities' }) {
       )}
 
       {showReports && (
-        <div>
-          <p className="mb-2 text-xs font-semibold uppercase text-gray-500">
-            Pending Community Reports ({pendingReports.length})
-          </p>
+        <TablePanel
+          title="Pending Community Reports"
+          subtitle="Community status updates awaiting admin review"
+          count={pendingReports.length}
+        >
           {pendingReports.length === 0 ? (
-            <p className="text-sm text-gray-400">No pending reports — community data is up to date</p>
+            <TableEmpty message="No pending reports — community data is up to date" />
           ) : (
-            <div className="space-y-2">
+            <DataTable
+              columns={[
+                { key: 'facility', label: 'Facility', sortable: true },
+                { key: 'reporter', label: 'Reporter' },
+                { key: 'details', label: 'Details' },
+                { key: 'actions', label: 'Actions' },
+              ]}
+            >
               {pendingReports.map((r) => (
-                <div key={r.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-white px-4 py-3">
-                  <div>
-                    <p className="text-sm font-medium">{r.facility?.name}</p>
-                    <p className="text-xs text-gray-400">
-                      {r.reporter?.firstName} {r.reporter?.lastName} —{' '}
-                      {r.isOpen ? 'Open' : 'Closed'}, {r.waitTimeMinutes}min wait, {r.crowdLevel} crowd
-                    </p>
-                    {r.notes && <p className="text-xs text-gray-500">{r.notes}</p>}
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      disabled={!!busy}
-                      onClick={() => verifyReport(r.id)}
-                      className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs text-white disabled:opacity-50"
-                    >
-                      Verify
-                    </button>
-                    <button
-                      type="button"
-                      disabled={!!busy}
-                      onClick={() => rejectReport(r.id)}
-                      className="rounded-lg border border-red-200 px-3 py-1.5 text-xs text-red-600 disabled:opacity-50"
-                    >
-                      Reject
-                    </button>
-                  </div>
-                </div>
+                <TableRow key={r.id}>
+                  <TablePrimaryCell
+                    title={r.facility?.name}
+                    subtitle={r.notes || `${r.isOpen ? 'Open' : 'Closed'} · ${r.waitTimeMinutes}min · ${r.crowdLevel} crowd`}
+                  />
+                  <TableCell>
+                    {r.reporter?.firstName} {r.reporter?.lastName}
+                  </TableCell>
+                  <TableCell className="text-[13px] text-gray-400">
+                    {r.isOpen ? 'Open' : 'Closed'}, {r.waitTimeMinutes}min wait, {r.crowdLevel} crowd
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <TableActionButton
+                        variant="primary"
+                        disabled={!!busy}
+                        onClick={() => verifyReport(r.id)}
+                      >
+                        Verify
+                      </TableActionButton>
+                      <TableActionButton
+                        variant="danger"
+                        disabled={!!busy}
+                        onClick={() => rejectReport(r.id)}
+                      >
+                        Reject
+                      </TableActionButton>
+                    </div>
+                  </TableCell>
+                </TableRow>
               ))}
-            </div>
+            </DataTable>
           )}
-        </div>
+        </TablePanel>
       )}
 
       {showWorkers && (
-        <div>
-          <p className="mb-2 text-xs font-semibold uppercase text-gray-500">
-            Health Worker Approvals ({pendingWorkers.length})
-          </p>
+        <TablePanel
+          title="Health Worker Approvals"
+          subtitle="Pending health worker verification requests"
+          count={pendingWorkers.length}
+        >
           {pendingWorkers.length === 0 ? (
-            <p className="text-sm text-gray-400">No pending approvals</p>
+            <TableEmpty message="No pending approvals" />
           ) : (
-            pendingWorkers.map((w) => (
-              <div key={w.id} className="mb-2 flex items-center justify-between rounded-xl bg-white px-4 py-3">
-                <p className="text-sm">{w.firstName} {w.lastName} — {w.email}</p>
-                <button
-                  type="button"
-                  disabled={busy === `worker-${w.id}`}
-                  onClick={() => verifyWorker(w.id)}
-                  className="rounded-lg bg-gray-800 px-3 py-1.5 text-xs text-white disabled:opacity-50"
-                >
-                  Approve
-                </button>
-              </div>
-            ))
+            <DataTable
+              columns={[
+                { key: 'name', label: 'Name', sortable: true },
+                { key: 'action', label: 'Action' },
+              ]}
+            >
+              {pendingWorkers.map((w) => {
+                const initials = `${w.firstName?.[0] || ''}${w.lastName?.[0] || ''}`.toUpperCase() || '?';
+                return (
+                  <TableRow key={w.id}>
+                    <TablePrimaryCell
+                      title={`${w.firstName} ${w.lastName}`}
+                      subtitle={w.email}
+                      avatar={<TableAvatar>{initials}</TableAvatar>}
+                    />
+                    <TableCell>
+                      <TableActionButton
+                        variant="primary"
+                        disabled={busy === `worker-${w.id}`}
+                        onClick={() => verifyWorker(w.id)}
+                      >
+                        Approve
+                      </TableActionButton>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </DataTable>
           )}
-        </div>
+        </TablePanel>
       )}
 
       {showFacilities && (
@@ -315,32 +351,43 @@ export default function AdminWidgets({ page = 'facilities' }) {
             </div>
           </div>
 
-          <div>
-            <p className="mb-2 text-xs font-semibold uppercase text-gray-500">Manage Facilities ({facilities.length})</p>
+          <TablePanel title="Manage Facilities" subtitle="All registered clinics and pharmacies" count={facilities.length}>
             {facilities.length === 0 ? (
-              <p className="text-sm text-gray-400">No facilities — add your first clinic or pharmacy above</p>
+              <TableEmpty message="No facilities — add your first clinic or pharmacy above" />
             ) : (
-              <div className="space-y-2">
+              <DataTable
+                columns={[
+                  { key: 'name', label: 'Name', sortable: true },
+                  { key: 'type', label: 'Type' },
+                  { key: 'status', label: 'Status' },
+                  { key: 'action', label: 'Action' },
+                ]}
+              >
                 {facilities.map((f) => (
-                  <div key={f.id} className="flex items-center justify-between rounded-xl bg-white px-4 py-3">
-                    <div>
-                      <p className="text-sm font-medium">{f.name}</p>
-                      <p className="text-xs capitalize text-gray-400">{f.type} — {f.address}</p>
-                      <p className="text-xs text-gray-400">{f.isOpen ? 'Open' : 'Closed'}{f.waitTimeMinutes != null ? ` · ${f.waitTimeMinutes}min wait` : ''}</p>
-                    </div>
-                    <button
-                      type="button"
-                      disabled={busy === `facility-d-${f.id}`}
-                      onClick={() => removeFacility(f.id)}
-                      className="rounded-lg border border-red-200 px-3 py-1.5 text-xs text-red-600 disabled:opacity-50"
-                    >
-                      Delete
-                    </button>
-                  </div>
+                  <TableRow key={f.id}>
+                    <TablePrimaryCell
+                      title={f.name}
+                      subtitle={f.address}
+                    />
+                    <TableCell className="capitalize">{f.type}</TableCell>
+                    <TableCell>
+                      {f.isOpen ? 'Open' : 'Closed'}
+                      {f.waitTimeMinutes != null ? ` · ${f.waitTimeMinutes}min wait` : ''}
+                    </TableCell>
+                    <TableCell>
+                      <TableActionButton
+                        variant="danger"
+                        disabled={busy === `facility-d-${f.id}`}
+                        onClick={() => removeFacility(f.id)}
+                      >
+                        Delete
+                      </TableActionButton>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </div>
+              </DataTable>
             )}
-          </div>
+          </TablePanel>
         </>
       )}
 

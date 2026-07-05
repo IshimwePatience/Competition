@@ -10,7 +10,7 @@ const ROLE_LABELS = {
 
 function UserAvatar({ user }) {
   return (
-    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-100 text-[13px] font-semibold text-gray-500">
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-[12px] font-semibold text-gray-500">
       {user.firstName?.[0]}
       {user.lastName?.[0]}
     </div>
@@ -30,8 +30,8 @@ function NotSetupBadge() {
 
 function StatusCheck() {
   return (
-    <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500 text-white">
-      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white">
+      <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
       </svg>
     </span>
@@ -42,7 +42,6 @@ export default function UsersPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [tab, setTab] = useState('users');
   const [statusFilter, setStatusFilter] = useState('all');
   const [filterOpen, setFilterOpen] = useState(false);
   const [busy, setBusy] = useState('');
@@ -126,36 +125,9 @@ export default function UsersPage() {
           <NotificationBell />
         </div>
 
-        {/* Tabs */}
-        <div className="mt-6 flex gap-8 border-b border-gray-200">
-          {[
-            { id: 'users', label: 'Users' },
-            { id: 'subscription', label: 'Subscription' },
-          ].map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setTab(t.id)}
-              className={`relative -mb-px pb-3 text-[14px] font-semibold transition ${
-                tab === t.id ? 'text-brand-orange' : 'text-gray-400 hover:text-gray-600'
-              }`}
-            >
-              {t.label}
-              {tab === t.id && (
-                <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-brand-orange" />
-              )}
-            </button>
-          ))}
-        </div>
       </div>
 
-      {tab === 'subscription' ? (
-        <div className="flex flex-1 items-center justify-center px-8 py-24 text-[14px] text-gray-400">
-          No subscription data configured
-        </div>
-      ) : (
-        <>
-          {/* Toolbar */}
+      {/* Toolbar */}
           <div className="flex flex-wrap items-center gap-4 px-8 py-5">
             <div className="flex min-w-[280px] flex-1 max-w-xl">
               <input
@@ -247,7 +219,7 @@ export default function UsersPage() {
               <table className="w-full border-collapse text-left">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="pb-3 pr-4 text-[13px] font-semibold text-gray-600">
+                    <th className="pb-2 pr-4 text-[13px] font-semibold text-gray-600">
                       <span className="inline-flex items-center gap-1">
                         Name
                         <svg className="h-3 w-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -255,18 +227,18 @@ export default function UsersPage() {
                         </svg>
                       </span>
                     </th>
-                    <th className="pb-3 pr-4 text-[13px] font-semibold text-gray-600">Institution</th>
-                    <th className="pb-3 pr-4 text-[13px] font-semibold text-gray-600">Role</th>
-                    <th className="pb-3 pr-4 text-[13px] font-semibold text-gray-600">Payout Status</th>
-                    <th className="pb-3 pr-4 text-[13px] font-semibold text-gray-600">Commission</th>
-                    <th className="pb-3 text-[13px] font-semibold text-gray-600">Status</th>
+                    <th className="pb-2 pr-4 text-[13px] font-semibold text-gray-600">Institution</th>
+                    <th className="pb-2 pr-4 text-[13px] font-semibold text-gray-600">Role</th>
+                    <th className="pb-2 pr-4 text-[13px] font-semibold text-gray-600">Payout Status</th>
+                    <th className="pb-2 pr-4 text-[13px] font-semibold text-gray-600">Commission</th>
+                    <th className="pb-2 text-[13px] font-semibold text-gray-600">Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.map((u) => (
                     <tr key={u.id} className="border-b border-gray-100 hover:bg-gray-50/40">
-                      <td className="py-4 pr-4">
-                        <div className="flex items-center gap-3">
+                      <td className="py-2 pr-4">
+                        <div className="flex items-center gap-2">
                           <UserAvatar user={u} />
                           <div className="min-w-0">
                             <p className="text-[14px] font-bold text-gray-900">
@@ -281,9 +253,9 @@ export default function UsersPage() {
                           </div>
                         </div>
                       </td>
-                      <td className="py-4 pr-4 text-[14px] text-gray-600">Platform</td>
-                      <td className="py-4 pr-4 text-[14px] text-gray-600">{ROLE_LABELS[u.role] || u.role}</td>
-                      <td className="py-4 pr-4">
+                      <td className="py-2 pr-4 text-[14px] text-gray-600">Platform</td>
+                      <td className="py-2 pr-4 text-[14px] text-gray-600">{ROLE_LABELS[u.role] || u.role}</td>
+                      <td className="py-2 pr-4">
                         {u.role === 'health_worker' && !u.isVerified ? (
                           <div className="flex items-center gap-2">
                             <NotSetupBadge />
@@ -300,14 +272,14 @@ export default function UsersPage() {
                           <span className="text-[14px] text-gray-300">—</span>
                         )}
                       </td>
-                      <td className="py-4 pr-4">
+                      <td className="py-2 pr-4">
                         {(u.healthCredits ?? 0) > 0 ? (
                           <span className="text-[14px] font-medium text-brand-orange">{u.healthCredits} credits</span>
                         ) : (
                           <span className="text-[14px] font-medium text-brand-orange">% Default</span>
                         )}
                       </td>
-                      <td className="py-4">
+                      <td className="py-2">
                         <StatusCheck />
                       </td>
                     </tr>
@@ -329,8 +301,6 @@ export default function UsersPage() {
               CareLink users: {filtered.length} shown · Filter: {filterLabel}
             </span>
           </div>
-        </>
-      )}
     </div>
   );
 }
