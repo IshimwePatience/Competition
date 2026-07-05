@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 import Sidebar from '../components/layout/Sidebar';
@@ -8,6 +9,8 @@ import AITriagePage from '../components/dashboard/AITriagePage';
 import FacilitiesPage from '../components/dashboard/FacilitiesPage';
 import ReportsPage from '../components/dashboard/ReportsPage';
 import UsersPage from '../components/dashboard/UsersPage';
+import FacilityProfilePage from '../components/dashboard/FacilityProfilePage';
+import FacilityStockPage from '../components/dashboard/FacilityStockPage';
 import RoleGuard from '../components/RoleGuard';
 
 const PAGE_META = {
@@ -15,29 +18,37 @@ const PAGE_META = {
   facilities: { title: 'My Facilities', subtitle: 'Facilities' },
   reports: { title: 'My Reports', subtitle: 'Reports' },
   users: { title: 'Platform Users', subtitle: 'Users' },
+  'facility-profile': { title: 'Facility Profile', subtitle: 'Profile' },
+  'facility-stock': { title: 'Medicine Stock', subtitle: 'Stock' },
 };
 
 export default function Dashboard() {
   const { role } = useAuth();
-  const [activeTab, setActiveTab] = useState('triage');
+  const isFacility = role === 'facility';
+  const [activeTab, setActiveTab] = useState(isFacility ? 'facility-stock' : 'triage');
   const [symptoms, setSymptoms] = useState('');
   const [triageResult, setTriageResult] = useState(null);
   const [triageLoading, setTriageLoading] = useState(false);
   const [reportFacility, setReportFacility] = useState(null);
   const [reportForm, setReportForm] = useState({ isOpen: true, waitTimeMinutes: 15, crowdLevel: 'moderate', notes: '' });
   const [credits, setCredits] = useState(0);
+  const [stockCount, setStockCount] = useState(0);
 
-  const meta = PAGE_META[activeTab];
+  const meta = PAGE_META[activeTab] || PAGE_META.triage;
 
   useEffect(() => {
-    if (role === 'facility') setActiveTab('facilities');
+    if (role === 'facility') setActiveTab('facility-stock');
   }, [role]);
 
   useEffect(() => {
-    if (role !== 'facility') {
+    if (!isFacility) {
       api.creditBalance().then((r) => setCredits(r.data.balance)).catch(() => {});
     }
-  }, [role]);
+  }, [isFacility]);
+
+  if (role === 'user') {
+    return <Navigate to="/symptoms" replace />;
+  }
 
   const runTriage = async () => {
     if (!symptoms.trim()) return;
@@ -67,12 +78,18 @@ export default function Dashboard() {
           <Topbar
             pageTitle={meta.title}
             pageSubtitle={meta.subtitle}
-            showSearch={activeTab === 'facilities'}
+            showSearch={!isFacility && activeTab === 'facilities'}
+            itemCount={isFacility && activeTab === 'facility-stock' ? stockCount : undefined}
           />
         )}
 
         <main className={`flex-1 overflow-y-auto bg-white ${activeTab === 'users' ? '' : 'px-8 py-6'}`}>
-          {activeTab === 'triage' && (
+          {isFacility && activeTab === 'facility-profile' && <FacilityProfilePage />}
+          {isFacility && activeTab === 'facility-stock' && (
+            <FacilityStockPage onCountChange={setStockCount} />
+          )}
+
+          {!isFacility && activeTab === 'triage' && (
             <AITriagePage
               symptoms={symptoms}
               setSymptoms={setSymptoms}
@@ -83,15 +100,15 @@ export default function Dashboard() {
             />
           )}
 
-          {activeTab === 'facilities' && (
+          {!isFacility && activeTab === 'facilities' && (
             <FacilitiesPage onReport={setReportFacility} />
           )}
 
-          {activeTab === 'reports' && (
+          {!isFacility && activeTab === 'reports' && (
             <ReportsPage />
           )}
 
-          {activeTab === 'users' && (
+          {!isFacility && activeTab === 'users' && (
             <RoleGuard roles={['admin']}>
               <UsersPage />
             </RoleGuard>
