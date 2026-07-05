@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../api/client';
+import EmptyState from './ui/EmptyState';
 
 export default function SearchBar() {
   const [query, setQuery] = useState('');
@@ -78,7 +79,7 @@ export default function SearchBar() {
             </div>
           )}
           {!results.facilities?.length && !results.reports?.length && (
-            <p className="p-4 text-center text-sm text-gray-400">No results found</p>
+            <EmptyState message="No results found" compact />
           )}
         </div>
       )}

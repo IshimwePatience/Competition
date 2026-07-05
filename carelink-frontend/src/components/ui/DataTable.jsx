@@ -1,3 +1,5 @@
+import EmptyState from './EmptyState';
+
 export function TablePanel({ title, subtitle, count, children, className = '' }) {
   return (
     <div className={className}>
@@ -50,10 +52,8 @@ export function TableLoading() {
   );
 }
 
-export function TableEmpty({ message = 'No items found' }) {
-  return (
-    <div className="py-16 text-center text-[14px] text-gray-400">{message}</div>
-  );
+export function TableEmpty({ message = 'No items found', compact = false }) {
+  return <EmptyState message={message} compact={compact} />;
 }
 
 export function DataTable({ columns, children }) {

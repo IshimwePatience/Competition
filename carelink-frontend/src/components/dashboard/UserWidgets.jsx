@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api/client';
 import FacilityCard from './FacilityCard';
+import EmptyState from '../ui/EmptyState';
 
 export default function UserWidgets({ onTriage, onReport }) {
   const [credits, setCredits] = useState(0);
@@ -59,9 +60,7 @@ export default function UserWidgets({ onTriage, onReport }) {
       <div>
         <h3 className="mb-3 text-sm font-semibold text-gray-700">Nearby Facilities</h3>
         {facilities.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-gray-200 p-8 text-center text-sm text-gray-400">
-            No facilities nearby yet. Admin can add facilities.
-          </div>
+          <EmptyState message="No facilities nearby yet" compact />
         ) : (
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
             {facilities.slice(0, 8).map((f) => (
@@ -74,7 +73,7 @@ export default function UserWidgets({ onTriage, onReport }) {
       <div>
         <h3 className="mb-3 text-sm font-semibold text-gray-700">My Reports</h3>
         {reports.length === 0 ? (
-          <p className="text-sm text-gray-400">No reports yet</p>
+          <EmptyState message="No reports yet" compact />
         ) : (
           <div className="space-y-2">
             {reports.map((r) => (

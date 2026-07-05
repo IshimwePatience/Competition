@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api/client';
 import FacilityCard from './FacilityCard';
+import EmptyState from '../ui/EmptyState';
 
 export default function UserFacilities({ onReport }) {
   const [facilities, setFacilities] = useState([]);
@@ -54,9 +55,7 @@ export default function UserFacilities({ onReport }) {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-gray-200 p-12 text-center text-sm text-gray-400">
-          No facilities nearby yet. Admin can add facilities.
-        </div>
+        <EmptyState message="No facilities nearby yet" />
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filtered.map((f) => (

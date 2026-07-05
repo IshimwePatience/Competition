@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api/client';
+import EmptyState from '../ui/EmptyState';
 
 export default function WorkerWidgets() {
   const [pending, setPending] = useState([]);
@@ -41,7 +42,7 @@ export default function WorkerWidgets() {
       <div>
         <p className="mb-2 text-xs font-semibold uppercase text-gray-500">Pending Reports to Verify</p>
         {pending.length === 0 ? (
-          <p className="text-sm text-gray-400">No pending reports</p>
+          <EmptyState message="No pending reports" compact />
         ) : (
           <div className="space-y-2">
             {pending.map((r) => (

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../api/client';
 import NotificationBell from '../NotificationBell';
+import EmptyState from '../ui/EmptyState';
 
 const ROLE_LABELS = {
   admin: 'Admin',
@@ -214,7 +215,7 @@ export default function UsersPage() {
                 <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
               </div>
             ) : filtered.length === 0 ? (
-              <div className="py-20 text-center text-[14px] text-gray-400">No users found</div>
+              <EmptyState message="No users found" />
             ) : (
               <table className="w-full border-collapse text-left">
                 <thead>

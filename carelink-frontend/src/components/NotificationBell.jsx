@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNotifications } from '../context/NotificationContext';
+import EmptyState from './ui/EmptyState';
 
 export default function NotificationBell() {
   const { notifications, unreadCount, markRead } = useNotifications();
@@ -29,7 +30,7 @@ export default function NotificationBell() {
           </div>
           <div className="max-h-72 overflow-y-auto">
             {notifications.length === 0 ? (
-              <p className="p-4 text-center text-sm text-gray-400">No notifications yet</p>
+              <EmptyState message="No notifications yet" compact />
             ) : (
               notifications.map((n) => (
                 <button
