@@ -68,6 +68,7 @@ export const api = {
   },
   verifyWorker: (id) => request(`/auth/users/${id}/verify`, { method: 'PATCH' }),
   applyHealthWorker: () => request('/auth/apply-health-worker', { method: 'POST' }),
+  createCampaign: (body) => request('/notifications/campaigns', { method: 'POST', body: JSON.stringify(body) }),
   search: (q) => request(`/search?q=${encodeURIComponent(q)}`),
 };
 

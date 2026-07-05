@@ -8,7 +8,7 @@ export default function Topbar({ activeView, onViewChange, showSearch = true }) 
   ];
 
   return (
-    <header className="border-b border-gray-100 bg-white px-6 py-4">
+    <header className="shrink-0 border-b border-gray-100 bg-white px-6 py-4">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-8">
           {tabs.map((tab) => (

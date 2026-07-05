@@ -11,7 +11,7 @@ export default function Sidebar({ activeTab, onTabChange }) {
   const { user, logout } = useAuth();
 
   return (
-    <aside className="flex w-56 shrink-0 flex-col border-r border-gray-100 bg-brand-sidebar px-4 py-5">
+    <aside className="fixed left-0 top-0 z-30 flex h-screen w-56 flex-col border-r border-gray-100 bg-brand-sidebar px-4 py-5">
       <div className="mb-8 px-2">
         <Logo />
       </div>
