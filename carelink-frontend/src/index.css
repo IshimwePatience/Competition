@@ -3,9 +3,13 @@
 @tailwind utilities;
 
 body {
-  @apply bg-brand-page text-gray-900 font-sans antialiased;
+  @apply bg-white text-gray-900 font-sans antialiased;
 }
 
 input:focus {
   @apply outline-none ring-2 ring-brand-orange/30 border-brand-orange/50;
+}
+
+html {
+  scroll-behavior: smooth;
 }

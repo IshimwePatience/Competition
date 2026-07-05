@@ -65,7 +65,7 @@ export default function UserWidgets({ onTriage, onReport }) {
         ) : (
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
             {facilities.slice(0, 8).map((f) => (
-              <FacilityCard key={f.id} facility={f} onClick={onReport} actionLabel="Report status →" />
+              <FacilityCard key={f.id} facility={f} onClick={onReport} actionLabel="Report status" />
             ))}
           </div>
         )}
