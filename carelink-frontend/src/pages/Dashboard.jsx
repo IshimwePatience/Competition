@@ -4,22 +4,27 @@ import { api } from '../api/client';
 import Sidebar from '../components/layout/Sidebar';
 import Topbar from '../components/layout/Topbar';
 import ToastStack from '../components/ToastStack';
-import UserWidgets from '../components/dashboard/UserWidgets';
-import WorkerWidgets from '../components/dashboard/WorkerWidgets';
-import AdminWidgets from '../components/dashboard/AdminWidgets';
-import RoleGuard from '../components/RoleGuard';
+import AITriagePage from '../components/dashboard/AITriagePage';
+import FacilitiesPage from '../components/dashboard/FacilitiesPage';
+import ReportsPage from '../components/dashboard/ReportsPage';
+
+const PAGE_META = {
+  triage: { title: 'AI Triage', subtitle: 'Health Agent' },
+  facilities: { title: 'My Facilities', subtitle: 'Facilities' },
+  reports: { title: 'My Reports', subtitle: 'Reports' },
+};
 
 export default function Dashboard() {
   const { role } = useAuth();
-  const isAdmin = role === 'admin';
-  const [activeTab, setActiveTab] = useState(isAdmin ? 'facilities' : 'facilities');
-  const [activeView, setActiveView] = useState('nearby');
+  const [activeTab, setActiveTab] = useState('triage');
   const [symptoms, setSymptoms] = useState('');
   const [triageResult, setTriageResult] = useState(null);
   const [triageLoading, setTriageLoading] = useState(false);
   const [reportFacility, setReportFacility] = useState(null);
   const [reportForm, setReportForm] = useState({ isOpen: true, waitTimeMinutes: 15, crowdLevel: 'moderate', notes: '' });
   const [credits, setCredits] = useState(0);
+
+  const meta = PAGE_META[activeTab];
 
   useEffect(() => {
     api.creditBalance().then((r) => setCredits(r.data.balance)).catch(() => {});
@@ -31,7 +36,6 @@ export default function Dashboard() {
     try {
       const res = await api.triageAnalyze(symptoms);
       setTriageResult(res.data);
-      setActiveTab('triage');
     } finally {
       setTriageLoading(false);
     }
@@ -50,89 +54,31 @@ export default function Dashboard() {
       <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
       <div className="flex h-screen flex-col pl-56">
-        <Topbar activeView={activeView} onViewChange={setActiveView} showSearch={!isAdmin} />
+        <Topbar
+          pageTitle={meta.title}
+          pageSubtitle={meta.subtitle}
+          showSearch={activeTab === 'facilities'}
+        />
 
-        <main className="flex-1 overflow-y-auto px-6 py-6">
-          <div className="mb-8 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
-            <h2 className="mb-3 text-center text-lg font-bold">Health Agent</h2>
-            <div className="flex items-end gap-3">
-              <textarea
-                value={symptoms}
-                onChange={(e) => setSymptoms(e.target.value)}
-                placeholder="Describe your symptoms... e.g. headache and fever for 2 days"
-                rows={2}
-                className="flex-1 resize-none rounded-xl border border-gray-200 px-4 py-3 text-sm"
-              />
-              <div className="flex flex-col items-end gap-2">
-                <span className="rounded-full bg-brand-peach/40 px-3 py-1 text-xs font-medium text-brand-orange">
-                  {credits} Credits
-                </span>
-                <button
-                  type="button"
-                  onClick={runTriage}
-                  disabled={triageLoading}
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-orange text-white hover:opacity-90 disabled:opacity-50"
-                >
-                  {triageLoading ? (
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  ) : (
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                    </svg>
-                  )}
-                </button>
-              </div>
-            </div>
-            {triageResult && (
-              <div className="mt-3 rounded-xl bg-orange-50 px-4 py-3 text-sm">
-                <span className="font-semibold capitalize">{triageResult.urgency} urgency</span>
-                {' — '}
-                Visit a <span className="font-semibold capitalize">{triageResult.recommendedFacility}</span>.
-                {' '}{triageResult.reason}
-              </div>
-            )}
-          </div>
-
-          {!isAdmin && (
-            <div className="mb-4 flex gap-3">
-              <select className="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-600">
-                <option>Featured</option>
-                <option>Open Now</option>
-              </select>
-              <select className="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-600">
-                <option>All Types</option>
-                <option>Pharmacy</option>
-                <option>Clinic</option>
-                <option>Hospital</option>
-                <option>Emergency</option>
-              </select>
-            </div>
+        <main className="flex-1 overflow-y-auto bg-gray-50/50 px-6 py-6">
+          {activeTab === 'triage' && (
+            <AITriagePage
+              symptoms={symptoms}
+              setSymptoms={setSymptoms}
+              triageResult={triageResult}
+              triageLoading={triageLoading}
+              credits={credits}
+              onRunTriage={runTriage}
+            />
           )}
 
-          <RoleGuard roles={['admin']}>
-            <AdminWidgets activeSection={activeTab} />
-          </RoleGuard>
+          {activeTab === 'facilities' && (
+            <FacilitiesPage onReport={setReportFacility} />
+          )}
 
-          <RoleGuard roles={['health_worker']}>
-            <div className="mb-6"><WorkerWidgets /></div>
-          </RoleGuard>
-
-          <RoleGuard roles={['user', 'health_worker']}>
-            <UserWidgets
-              onTriage={() => setActiveTab('triage')}
-              onReport={(f) => setReportFacility(f)}
-            />
-          </RoleGuard>
-
-          <footer className="mt-8 border-t border-gray-100 py-4 text-center text-xs text-gray-400">
-            <div className="flex flex-wrap justify-center gap-4">
-              <span>Guides</span>
-              <span>Terms &amp; Conditions</span>
-              <span>Privacy Policy</span>
-              <span>Help Center</span>
-            </div>
-            <p className="mt-2">© 2026 CareLink</p>
-          </footer>
+          {activeTab === 'reports' && (
+            <ReportsPage />
+          )}
         </main>
       </div>
 

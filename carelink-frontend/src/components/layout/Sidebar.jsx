@@ -33,9 +33,6 @@ export default function Sidebar({ activeTab, onTabChange }) {
           </button>
         ))}
 
-        <div className="pt-4">
-          <p className="px-3 text-xs font-medium text-gray-400">Recent</p>
-        </div>
       </nav>
 
       <div className="mt-auto rounded-xl bg-white p-3 shadow-sm">

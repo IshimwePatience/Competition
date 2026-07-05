@@ -13,7 +13,7 @@ const defaultFacilityForm = () => ({
   isOpen: true,
 });
 
-export default function AdminWidgets({ activeSection = 'facilities' }) {
+export default function AdminWidgets({ page = 'facilities' }) {
   const [analytics, setAnalytics] = useState(null);
   const [pendingWorkers, setPendingWorkers] = useState([]);
   const [pendingReports, setPendingReports] = useState([]);
@@ -151,13 +151,13 @@ export default function AdminWidgets({ activeSection = 'facilities' }) {
 
   if (!analytics) return null;
 
-  const showStats = true;
-  const showReports = activeSection === 'reports';
-  const showFacilities = activeSection === 'facilities';
-  const showUsers = activeSection === 'reports';
-  const showWorkers = activeSection === 'facilities';
-  const showCampaign = activeSection === 'triage';
-  const showBreakdown = activeSection !== 'triage';
+  const showStats = page === 'facilities' || page === 'reports';
+  const showReports = page === 'reports';
+  const showFacilities = page === 'facilities';
+  const showUsers = page === 'reports';
+  const showWorkers = page === 'facilities';
+  const showCampaign = page === 'triage';
+  const showBreakdown = page === 'facilities' || page === 'reports';
 
   const stats = [
     { label: 'Users', value: analytics.totals.users },
