@@ -27,6 +27,11 @@ module.exports = {
     from: process.env.SMTP_FROM || process.env.SMTP_USER,
   },
   clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
+  allowedOrigins: [
+    process.env.CLIENT_URL || 'http://localhost:5173',
+    'http://localhost:5173',
+    'https://carelink-frontend-beta.vercel.app',
+  ].filter((origin, index, list) => origin && list.indexOf(origin) === index),
   admin: {
     email: process.env.ADMIN_EMAIL,
     password: process.env.ADMIN_PASSWORD,

@@ -1,3 +1,5 @@
+import { clearToken, getToken } from './token';
+
 const API_BASE = import.meta.env.VITE_API_URL || '/api/v1';
 
 class ApiError extends Error {
@@ -8,10 +10,12 @@ class ApiError extends Error {
 }
 
 async function request(path, options = {}) {
+  const token = getToken();
   const res = await fetch(`${API_BASE}${path}`, {
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },
     ...options,
@@ -20,6 +24,7 @@ async function request(path, options = {}) {
   const data = await res.json().catch(() => ({}));
 
   if (!res.ok) {
+    if (res.status === 401 && getToken()) clearToken();
     throw new ApiError(data.message || 'Request failed', res.status);
   }
 

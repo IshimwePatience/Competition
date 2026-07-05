@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { io } from 'socket.io-client';
 import { useAuth } from './AuthContext';
 import { api } from '../api/client';
+import { getToken } from '../api/token';
 
 const NotificationContext = createContext(null);
 
@@ -39,6 +40,7 @@ export function NotificationProvider({ children }) {
     const s = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000', {
       withCredentials: true,
       transports: ['websocket', 'polling'],
+      auth: { token: getToken() || undefined },
     });
 
     s.on('connect', () => {});

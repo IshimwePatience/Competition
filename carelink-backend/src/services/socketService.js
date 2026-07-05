@@ -8,7 +8,7 @@ let io = null;
 const init = (httpServer) => {
   io = new Server(httpServer, {
     cors: {
-      origin: config.clientUrl,
+      origin: config.allowedOrigins,
       credentials: true,
     },
   });
