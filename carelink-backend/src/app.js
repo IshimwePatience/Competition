@@ -43,6 +43,7 @@ app.use('/api/v1/credits', creditRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
 app.use('/api/v1/analytics', analyticsRoutes);
 app.use('/api/v1/search', searchRoutes);
+app.use('/api/v1/wandaa', require('./routes/wandaaRoutes'));
 
 app.use(notFound);
 app.use(errorHandler);
