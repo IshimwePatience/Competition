@@ -9,11 +9,12 @@ const CATEGORIES = [
   { id: 'community', label: 'Community' },
 ];
 
-export default function PublicNavbar({ activeSection, onLogin, onSignUp }) {
+export default function PublicNavbar({ activeSection, onSectionChange, onLogin, onSignUp }) {
   const navigate = useNavigate();
 
   const goToCategory = (id) => {
-    navigate(`/#${id}`);
+    onSectionChange?.(id);
+    window.history.replaceState(null, '', `/#${id}`);
   };
 
   return (

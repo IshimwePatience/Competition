@@ -10,6 +10,8 @@ const img = (id, w, h) =>
 
 const IMG = {
   hero: img('photo-1666214280557-f1b5022eb634', 900, 600),
+  clinic: img('photo-1519494026892-80bbd2d6fd0d', 600, 400),
+  pharmacy: img('photo-1584308666744-24d5c474f2ae', 600, 400),
   doctor: img('photo-1612349317150-e413f6a5b16d', 600, 400),
   nurse: img('photo-1573496359142-b8d87734a5a2', 150, 150),
   patient: img('photo-1507003211169-0a1dd7228f2d', 150, 150),
@@ -24,6 +26,11 @@ const IMG = {
   grid8: img('photo-1582719478250-c89cae4dc85b', 300, 300),
   grid9: img('photo-1579154204601-01588f351e67', 300, 300),
 };
+
+const CATEGORY_CARDS = [
+  { id: 'pharmacy', label: 'Pharmacies', img: IMG.pharmacy, sub: 'Medicine stock updates' },
+  { id: 'clinic', label: 'Clinics', img: IMG.clinic, sub: 'Live status & wait times' },
+];
 
 const CATEGORIES = [
   { id: 'pharmacy', label: 'Pharmacy' },
@@ -75,11 +82,20 @@ export default function Landing() {
   }, [searchParams, setSearchParams]);
 
   useEffect(() => {
-    const hash = window.location.hash?.slice(1);
-    if (hash && CATEGORIES.some((c) => c.id === hash)) {
-      const t = setTimeout(() => scrollToSection(hash), 100);
-      return () => clearTimeout(t);
-    }
+    const scrollFromHash = () => {
+      const hash = window.location.hash?.slice(1);
+      if (hash && CATEGORIES.some((c) => c.id === hash)) {
+        scrollToSection(hash);
+        setActiveSection(hash);
+      }
+    };
+
+    const t = setTimeout(scrollFromHash, 100);
+    window.addEventListener('hashchange', scrollFromHash);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener('hashchange', scrollFromHash);
+    };
   }, []);
 
   useEffect(() => {
@@ -101,6 +117,7 @@ export default function Landing() {
   }, []);
 
   const scrollToSection = (id) => {
+    setActiveSection(id);
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
@@ -119,6 +136,7 @@ export default function Landing() {
       {/* ── HEADER (remove.bg style: Log in + Sign up pill) ── */}
       <PublicNavbar
         activeSection={activeSection}
+        onSectionChange={scrollToSection}
         onLogin={() => setAuthMode('login')}
         onSignUp={() => setAuthMode('register')}
       />
@@ -150,6 +168,31 @@ export default function Landing() {
               className="absolute bottom-0 right-0 hidden h-full w-1/2 object-cover object-center sm:block"
               style={{ maskImage: 'linear-gradient(to left, black 60%, transparent)' }}
             />
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-7xl px-4 pb-6 sm:px-6">
+          <div className="grid gap-4 sm:grid-cols-2">
+            {CATEGORY_CARDS.map((card) => (
+              <div key={card.id} id={card.id} className="scroll-mt-28">
+                <button
+                  type="button"
+                  onClick={() => setAuthMode('register')}
+                  className="group relative flex w-full overflow-hidden rounded-3xl bg-brand-cream text-left"
+                >
+                  <img
+                    src={card.img}
+                    alt={card.label}
+                    className="h-44 w-full object-cover transition group-hover:scale-105 sm:h-48"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                  <div className="absolute bottom-4 left-4">
+                    <p className="text-lg font-bold text-white">{card.label}</p>
+                    <p className="text-xs text-white/80">{card.sub}</p>
+                  </div>
+                </button>
+              </div>
+            ))}
           </div>
         </section>
 
