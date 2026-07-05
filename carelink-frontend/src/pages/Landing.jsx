@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Logo from '../components/Logo';
@@ -8,7 +8,7 @@ const img = (id, w, h) =>
   `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${w}&h=${h || w}&q=80`;
 
 const IMG = {
-  hero: img('photo-1576091160399-112ba8d25d1d', 900, 600),
+  hero: img('photo-1666214280557-f1b5022eb634', 900, 600),
   clinic: img('photo-1519494026892-80bbd2d6fd0d', 600, 400),
   pharmacy: img('photo-1584308666744-24d5c474f2ae', 600, 400),
   doctor: img('photo-1612349317150-e413f6a5b16d', 600, 400),
@@ -26,7 +26,13 @@ const IMG = {
   grid9: img('photo-1579154204601-01588f351e67', 300, 300),
 };
 
-const CATEGORIES = ['Pharmacy', 'Clinic', 'Hospital', 'Emergency', 'Community'];
+const CATEGORIES = [
+  { id: 'pharmacy', label: 'Pharmacy' },
+  { id: 'clinic', label: 'Clinic' },
+  { id: 'hospital', label: 'Hospital' },
+  { id: 'emergency', label: 'Emergency' },
+  { id: 'community', label: 'Community' },
+];
 
 const TESTIMONIALS = [
   {
@@ -54,6 +60,29 @@ const GRID_IMGS = [IMG.grid1, IMG.grid2, IMG.grid3, IMG.grid4, IMG.grid5, IMG.gr
 export default function Landing() {
   const { isAuthenticated, loading } = useAuth();
   const [authMode, setAuthMode] = useState(null);
+  const [activeSection, setActiveSection] = useState('pharmacy');
+
+  useEffect(() => {
+    const sections = CATEGORIES.map((c) => document.getElementById(c.id)).filter(Boolean);
+    if (!sections.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+        if (visible[0]) setActiveSection(visible[0].target.id);
+      },
+      { rootMargin: '-20% 0px -60% 0px', threshold: [0, 0.25, 0.5, 0.75, 1] }
+    );
+
+    sections.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+
+  const scrollToSection = (id) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   if (loading) {
     return (
@@ -69,7 +98,7 @@ export default function Landing() {
     <div className="min-h-screen bg-white font-sans text-gray-900">
       {/* ── HEADER (remove.bg style: Log in + Sign up pill) ── */}
       <header className="sticky top-0 z-40 border-b border-gray-100 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3 sm:px-6">
+        <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3 sm:px-6">
           <Logo size="md" />
 
           <button
@@ -95,13 +124,17 @@ export default function Landing() {
         </div>
 
         {/* Category nav — Petsmart row */}
-        <div className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4 pb-3 sm:px-6">
-          {CATEGORIES.map((label) => (
+        <div className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 pb-3 sm:px-6">
+          {CATEGORIES.map(({ id, label }) => (
             <button
-              key={label}
+              key={id}
               type="button"
-              onClick={() => setAuthMode('register')}
-              className="shrink-0 rounded-full px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
+              onClick={() => scrollToSection(id)}
+              className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition ${
+                activeSection === id
+                  ? 'bg-brand-orange text-white shadow-sm'
+                  : 'text-gray-600 hover:bg-orange-50 hover:text-brand-orange'
+              }`}
             >
               {label}
             </button>
@@ -111,7 +144,7 @@ export default function Landing() {
 
       <main>
         {/* ── HERO — Petsmart split banner ── */}
-        <section className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
+        <section className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
           <div className="grid gap-4 lg:grid-cols-3">
             <div className="relative overflow-hidden rounded-3xl bg-brand-orange lg:col-span-2">
               <div className="flex h-full min-h-[280px] flex-col justify-between p-8 sm:min-h-[320px] sm:p-10">
@@ -133,7 +166,7 @@ export default function Landing() {
               </div>
               <img
                 src={IMG.hero}
-                alt="Healthcare professional"
+                alt="Healthcare team in modern clinic"
                 className="absolute bottom-0 right-0 hidden h-full w-1/2 object-cover object-center sm:block"
                 style={{ maskImage: 'linear-gradient(to left, black 60%, transparent)' }}
               />
@@ -141,14 +174,14 @@ export default function Landing() {
 
             <div className="flex flex-col gap-4">
               {[
-                { label: 'Clinics', img: IMG.clinic, sub: 'Live status & wait times' },
-                { label: 'Pharmacies', img: IMG.pharmacy, sub: 'Medicine stock updates' },
+                { id: 'clinic', label: 'Clinics', img: IMG.clinic, sub: 'Live status & wait times' },
+                { id: 'pharmacy', label: 'Pharmacies', img: IMG.pharmacy, sub: 'Medicine stock updates' },
               ].map((card) => (
+                <div key={card.id} id={card.id} className="scroll-mt-28">
                 <button
-                  key={card.label}
                   type="button"
                   onClick={() => setAuthMode('register')}
-                  className="group relative flex-1 overflow-hidden rounded-3xl bg-brand-cream text-left"
+                  className="group relative flex w-full flex-1 overflow-hidden rounded-3xl bg-brand-cream text-left"
                 >
                   <img src={card.img} alt={card.label} className="h-36 w-full object-cover transition group-hover:scale-105 sm:h-auto sm:min-h-[148px]" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
@@ -157,13 +190,14 @@ export default function Landing() {
                     <p className="text-xs text-white/80">{card.sub}</p>
                   </div>
                 </button>
+                </div>
               ))}
             </div>
           </div>
         </section>
 
         {/* ── TESTIMONIALS — remove.bg "They love us" ── */}
-        <section className="bg-gray-50 py-16">
+        <section id="hospital" className="scroll-mt-28 bg-gray-50 py-16">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <h2 className="text-center text-3xl font-bold text-gray-900">
               They love us. You will too.
@@ -187,7 +221,7 @@ export default function Landing() {
         </section>
 
         {/* ── FEATURE — remove.bg two-column CLI section ── */}
-        <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+        <section id="emergency" className="scroll-mt-28 mx-auto max-w-6xl px-4 py-16 sm:px-6">
           <div className="grid items-center gap-10 lg:grid-cols-2">
             <div className="overflow-hidden rounded-3xl shadow-soft">
               <div className="bg-gray-900 px-4 py-3 font-mono text-xs text-green-400">
@@ -222,7 +256,7 @@ export default function Landing() {
         </section>
 
         {/* ── CTA — remove.bg "Get in touch" + 3x3 grid ── */}
-        <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+        <section id="community" className="scroll-mt-28 mx-auto max-w-6xl px-4 py-16 sm:px-6">
           <div className="grid items-center gap-10 lg:grid-cols-2">
             <div>
               <p className="text-sm font-medium text-gray-500">Serving 100+ communities?</p>
