@@ -284,6 +284,7 @@ export default function Landing() {
             <span>Privacy Policy</span>
             <span>Help Center</span>
           </div>
+          <a href="/CareLink.apk" download className="rounded-full bg-brand-orange px-5 py-2 text-xs font-semibold text-white hover:opacity-90">Download Android App</a>
           <p className="text-xs text-gray-400">© 2026 CareLink — Health &amp; Community Wellbeing</p>
         </div>
       </footer>

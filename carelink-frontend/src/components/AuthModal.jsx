@@ -215,7 +215,7 @@ export default function AuthModal({ mode: initialMode = 'register', accountType:
           <button
             type="button"
             onClick={handleGoogleLogin}
-            className="mb-4 flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+            className="hidden mb-4 flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
           >
             <GoogleIcon />
             Sign in with Google
@@ -358,7 +358,7 @@ export default function AuthModal({ mode: initialMode = 'register', accountType:
             <button
               type="button"
               onClick={handleGoogleLogin}
-              className="mb-1 flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+              className="hidden mb-1 flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
             >
               <GoogleIcon />
               Sign in with Google
