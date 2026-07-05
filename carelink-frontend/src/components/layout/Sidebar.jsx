@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import Logo from '../Logo';
 import { useAuth } from '../../context/AuthContext';
 
@@ -7,9 +8,64 @@ const navItems = [
   { id: 'reports', label: 'My Reports', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
 ];
 
-export default function Sidebar({ activeTab, onTabChange }) {
+function UserAvatarMenu() {
   const { user, logout } = useAuth();
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
 
+  useEffect(() => {
+    const onClickOutside = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, []);
+
+  if (!user) {
+    return <p className="px-2 text-sm text-gray-500">Log in</p>;
+  }
+
+  return (
+    <div className="relative px-2" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 text-sm font-semibold text-gray-600 transition hover:bg-gray-300"
+        aria-label="Account menu"
+      >
+        {user.firstName?.[0]}{user.lastName?.[0]}
+      </button>
+
+      {open && (
+        <div className="absolute bottom-full left-2 mb-2 w-52 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
+          <div className="border-b border-gray-100 px-4 py-3">
+            <p className="truncate text-sm font-medium text-gray-900">
+              {user.firstName} {user.lastName}
+            </p>
+            <p className="truncate text-xs capitalize text-gray-400">
+              {user.role?.replace('_', ' ')}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              logout();
+            }}
+            className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50"
+          >
+            <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            Log out
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function Sidebar({ activeTab, onTabChange }) {
   return (
     <aside className="fixed left-0 top-0 z-30 flex h-screen w-56 flex-col border-r border-gray-100 bg-brand-sidebar px-4 py-5">
       <div className="mb-8 px-2">
@@ -32,28 +88,10 @@ export default function Sidebar({ activeTab, onTabChange }) {
             {item.label}
           </button>
         ))}
-
       </nav>
 
-      <div className="mt-auto rounded-xl bg-white p-3 shadow-sm">
-        {user ? (
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-peach text-sm font-bold text-white">
-              {user.firstName?.[0]}{user.lastName?.[0]}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">{user.firstName} {user.lastName}</p>
-              <p className="truncate text-xs capitalize text-gray-400">{user.role?.replace('_', ' ')}</p>
-            </div>
-            <button type="button" onClick={logout} className="text-gray-400 hover:text-gray-600" title="Logout">
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-            </button>
-          </div>
-        ) : (
-          <p className="text-sm text-gray-500">Log in</p>
-        )}
+      <div className="mt-auto py-2">
+        <UserAvatarMenu />
       </div>
     </aside>
   );
