@@ -1,32 +1,52 @@
 require('dotenv').config();
 
+const sslConfig = {
+  require: true,
+  rejectUnauthorized: false,
+};
+
+const useSsl = () =>
+  process.env.DB_SSL === 'true'
+  || (process.env.DB_HOST || '').includes('supabase.com')
+  || (process.env.DATABASE_URL || '').includes('supabase.com');
+
+const poolConfig = {
+  max: 5,
+  idle: 10000,
+  acquire: 30000,
+};
+
+const buildConfig = (overrides = {}) => {
+  const ssl = useSsl();
+  const base = {
+    dialect: 'postgres',
+    logging: false,
+    dialectOptions: ssl ? { ssl: sslConfig } : {},
+    pool: poolConfig,
+    ...overrides,
+  };
+
+  if (process.env.DATABASE_URL) {
+    return {
+      url: process.env.DATABASE_URL,
+      ...base,
+    };
+  }
+
+  return {
+    username: overrides.username ?? process.env.DB_USER ?? 'postgres',
+    password: overrides.password ?? process.env.DB_PASSWORD ?? 'postgres',
+    database: overrides.database ?? process.env.DB_NAME ?? 'carelink',
+    host: overrides.host ?? process.env.DB_HOST ?? 'localhost',
+    port: parseInt(overrides.port ?? process.env.DB_PORT, 10) || 5432,
+    ...base,
+  };
+};
+
 module.exports = {
-  development: {
-    username: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || 'postgres',
-    database: process.env.DB_NAME || 'carelink',
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT, 10) || 5432,
-    dialect: 'postgres',
-    logging: false,
-  },
-  test: {
-    username: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || 'postgres',
+  development: buildConfig(),
+  test: buildConfig({
     database: `${process.env.DB_NAME || 'carelink'}_test`,
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT, 10) || 5432,
-    dialect: 'postgres',
-    logging: false,
-  },
-  production: {
-    username: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    host: process.env.DB_HOST,
-    port: parseInt(process.env.DB_PORT, 10) || 5432,
-    dialect: 'postgres',
-    logging: false,
-    dialectOptions: process.env.DB_SSL === 'true' ? { ssl: { require: true, rejectUnauthorized: false } } : {},
-  },
+  }),
+  production: buildConfig(),
 };
