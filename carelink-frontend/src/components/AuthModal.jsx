@@ -24,7 +24,7 @@ function EyeIcon({ off }) {
   );
 }
 
-export default function AuthModal({ mode: initialMode = 'register', accountType: initialAccountType = 'user', onClose, onSuccess, initialError = '' }) {
+export default function AuthModal({ mode: initialMode = 'register', accountType: initialAccountType = 'facility', onClose, onSuccess, initialError = '' }) {
   const [mode, setMode] = useState(initialMode);
   const [accountType, setAccountType] = useState(initialAccountType);
   const [step, setStep] = useState(1);
@@ -57,7 +57,7 @@ export default function AuthModal({ mode: initialMode = 'register', accountType:
 
   const switchMode = (nextMode) => {
     setMode(nextMode);
-    if (nextMode === 'login') setAccountType('user');
+    if (nextMode === 'register') setAccountType('facility');
     resetForm();
   };
 
@@ -66,26 +66,34 @@ export default function AuthModal({ mode: initialMode = 'register', accountType:
       fieldErrors[field] ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-white'
     }`;
 
+  const totalSteps = 4;
+  const credentialStep = 4;
+
   const validateStep1 = () => {
     const errs = {};
     if (!form.firstName.trim()) errs.firstName = 'First name required';
     if (!form.lastName.trim()) errs.lastName = 'Last name required';
-    setFieldErrors(errs);
-    return Object.keys(errs).length === 0;
-  };
-
-  const isFacility = accountType === 'facility';
-  const totalSteps = isFacility ? 3 : 2;
-  const credentialStep = isFacility ? 3 : 2;
-
-  const validateFacilityStep = () => {
-    const errs = {};
     if (!form.facilityName.trim()) errs.facilityName = 'Facility name required';
-    if (!form.address.trim()) errs.address = 'Address required';
-    if (!form.latitude || !form.longitude) errs.location = 'Use location or enter coordinates';
     setFieldErrors(errs);
     return Object.keys(errs).length === 0;
   };
+
+  const validateStep2 = () => {
+    const errs = {};
+    if (!form.address.trim()) errs.address = 'Address required';
+    setFieldErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const validateStep3 = () => {
+    const errs = {};
+    if (!form.latitude || !form.longitude) errs.location = 'Tap Use my location';
+    setFieldErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const validateAllFacility = () =>
+    validateStep1() && validateStep2() && validateStep3();
 
   const validateCredentials = () => {
     const errs = {};
@@ -107,13 +115,9 @@ export default function AuthModal({ mode: initialMode = 'register', accountType:
   const handleNext = (e) => {
     e.preventDefault();
     setError('');
-    if (step === 1 && validateStep1()) {
-      setStep(2);
-      return;
-    }
-    if (step === 2 && isFacility && validateFacilityStep()) {
-      setStep(3);
-    }
+    if (step === 1 && validateStep1()) setStep(2);
+    else if (step === 2 && validateStep2()) setStep(3);
+    else if (step === 3 && validateStep3()) setStep(4);
   };
 
   const useMyLocation = () => {
@@ -131,29 +135,24 @@ export default function AuthModal({ mode: initialMode = 'register', accountType:
   const handleRegister = async (e) => {
     e.preventDefault();
     setError('');
-    if (!validateCredentials()) return;
+    if (!validateCredentials() || !validateAllFacility()) return;
 
     setLoading(true);
     try {
-      const payload = {
+      await register({
+        accountType: 'facility',
         firstName: form.firstName,
         lastName: form.lastName,
         email: form.email,
         password: form.password,
-      };
-      if (isFacility) {
-        Object.assign(payload, {
-          accountType: 'facility',
-          facilityName: form.facilityName,
-          facilityType: form.facilityType,
-          address: form.address,
-          phone: form.phone,
-          latitude: parseFloat(form.latitude),
-          longitude: parseFloat(form.longitude),
-          openingHours: form.openingHours,
-        });
-      }
-      await register(payload);
+        facilityName: form.facilityName,
+        facilityType: form.facilityType,
+        address: form.address,
+        phone: form.phone,
+        latitude: parseFloat(form.latitude),
+        longitude: parseFloat(form.longitude),
+        openingHours: form.openingHours,
+      });
       onSuccess?.();
     } catch (err) {
       setError(err.message || 'Something went wrong');
@@ -200,9 +199,7 @@ export default function AuthModal({ mode: initialMode = 'register', accountType:
         </div>
 
         <h2 className="mb-2 text-center text-xl font-bold text-gray-900">
-          {mode === 'register'
-            ? (isFacility ? 'Register your facility' : 'Get started with CareLink')
-            : 'Welcome back'}
+          {mode === 'register' ? 'Register your facility' : 'Welcome back'}
         </h2>
 
         {mode === 'register' && (
@@ -211,59 +208,28 @@ export default function AuthModal({ mode: initialMode = 'register', accountType:
           </p>
         )}
 
-        {mode === 'register' && step === 1 && !isFacility && (
-          <button
-            type="button"
-            onClick={handleGoogleLogin}
-            className="mb-4 flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-          >
-            <GoogleIcon />
-            Sign in with Google
-          </button>
-        )}
-
         {error && (
           <div className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div>
         )}
 
-        {/* ── REGISTER STEP 1: name fields stacked vertically ── */}
+        {/* ── REGISTER STEP 1: 3 fields ── */}
         {mode === 'register' && step === 1 && (
           <form onSubmit={handleNext} className="space-y-3">
-            <div>
-              <input
-                type="text"
-                placeholder="First name"
-                value={form.firstName}
-                onChange={(e) => setForm({ ...form, firstName: e.target.value })}
-                className={inputClass('firstName')}
-              />
-              {fieldErrors.firstName && <p className="mt-1 text-xs text-red-500">{fieldErrors.firstName}</p>}
-            </div>
-            <div>
-              <input
-                type="text"
-                placeholder="Last name"
-                value={form.lastName}
-                onChange={(e) => setForm({ ...form, lastName: e.target.value })}
-                className={inputClass('lastName')}
-              />
-              {fieldErrors.lastName && <p className="mt-1 text-xs text-red-500">{fieldErrors.lastName}</p>}
-            </div>
-
-            <button
-              type="submit"
-              className="mt-2 w-full rounded-xl bg-brand-peach py-3.5 text-sm font-semibold text-white transition hover:bg-brand-peachHover"
-            >
+            <input type="text" placeholder="First name" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} className={inputClass('firstName')} />
+            {fieldErrors.firstName && <p className="text-xs text-red-500">{fieldErrors.firstName}</p>}
+            <input type="text" placeholder="Last name" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} className={inputClass('lastName')} />
+            {fieldErrors.lastName && <p className="text-xs text-red-500">{fieldErrors.lastName}</p>}
+            <input type="text" placeholder="Facility name" value={form.facilityName} onChange={(e) => setForm({ ...form, facilityName: e.target.value })} className={inputClass('facilityName')} />
+            {fieldErrors.facilityName && <p className="text-xs text-red-500">{fieldErrors.facilityName}</p>}
+            <button type="submit" className="mt-2 w-full rounded-xl bg-brand-peach py-3.5 text-sm font-semibold text-white transition hover:bg-brand-peachHover">
               Next
             </button>
           </form>
         )}
 
-        {/* ── REGISTER STEP 2: email + password stacked vertically ── */}
-        {mode === 'register' && step === 2 && isFacility && (
+        {/* ── REGISTER STEP 2: 3 fields ── */}
+        {mode === 'register' && step === 2 && (
           <form onSubmit={handleNext} className="space-y-3">
-            <input type="text" placeholder="Facility name" value={form.facilityName} onChange={(e) => setForm({ ...form, facilityName: e.target.value })} className={inputClass('facilityName')} />
-            {fieldErrors.facilityName && <p className="text-xs text-red-500">{fieldErrors.facilityName}</p>}
             <select value={form.facilityType} onChange={(e) => setForm({ ...form, facilityType: e.target.value })} className={inputClass('facilityType')}>
               <option value="clinic">Clinic</option>
               <option value="pharmacy">Pharmacy</option>
@@ -271,10 +237,6 @@ export default function AuthModal({ mode: initialMode = 'register', accountType:
             <input type="text" placeholder="Address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className={inputClass('address')} />
             {fieldErrors.address && <p className="text-xs text-red-500">{fieldErrors.address}</p>}
             <input type="text" placeholder="Phone (optional)" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputClass('phone')} />
-            <button type="button" onClick={useMyLocation} className="w-full rounded-xl border border-gray-200 py-3 text-sm text-gray-600 hover:bg-gray-50">
-              Use my location
-            </button>
-            {fieldErrors.location && <p className="text-xs text-red-500">{fieldErrors.location}</p>}
             <div className="mt-2 flex gap-3">
               <button type="button" onClick={() => { setStep(1); setFieldErrors({}); }} className="w-1/3 rounded-xl border border-gray-200 py-3.5 text-sm font-medium text-gray-600 hover:bg-gray-50">Back</button>
               <button type="submit" className="flex-1 rounded-xl bg-brand-peach py-3.5 text-sm font-semibold text-white transition hover:bg-brand-peachHover">Next</button>
@@ -282,6 +244,25 @@ export default function AuthModal({ mode: initialMode = 'register', accountType:
           </form>
         )}
 
+        {/* ── REGISTER STEP 3: location ── */}
+        {mode === 'register' && step === 3 && (
+          <form onSubmit={handleNext} className="space-y-3">
+            <button type="button" onClick={useMyLocation} className="w-full rounded-xl border border-gray-200 py-3 text-sm text-gray-600 hover:bg-gray-50">
+              Use my location
+            </button>
+            {fieldErrors.location && <p className="text-xs text-red-500">{fieldErrors.location}</p>}
+            {form.latitude && form.longitude && (
+              <p className="text-center text-xs text-gray-400">Location saved</p>
+            )}
+            <input type="text" placeholder="Opening hours" value={form.openingHours} onChange={(e) => setForm({ ...form, openingHours: e.target.value })} className={inputClass('openingHours')} />
+            <div className="mt-2 flex gap-3">
+              <button type="button" onClick={() => { setStep(2); setFieldErrors({}); }} className="w-1/3 rounded-xl border border-gray-200 py-3.5 text-sm font-medium text-gray-600 hover:bg-gray-50">Back</button>
+              <button type="submit" className="flex-1 rounded-xl bg-brand-peach py-3.5 text-sm font-semibold text-white transition hover:bg-brand-peachHover">Next</button>
+            </div>
+          </form>
+        )}
+
+        {/* ── REGISTER STEP 4: account ── */}
         {mode === 'register' && step === credentialStep && (
           <form onSubmit={handleRegister} className="space-y-3">
             <div>
@@ -329,7 +310,7 @@ export default function AuthModal({ mode: initialMode = 'register', accountType:
             <div className="mt-2 flex gap-3">
               <button
                 type="button"
-                onClick={() => { setStep(isFacility ? 2 : 1); setFieldErrors({}); }}
+                onClick={() => { setStep(3); setFieldErrors({}); }}
                 className="w-1/3 rounded-xl border border-gray-200 py-3.5 text-sm font-medium text-gray-600 hover:bg-gray-50"
               >
                 Back
@@ -422,31 +403,11 @@ export default function AuthModal({ mode: initialMode = 'register', accountType:
             <>
               Don&apos;t have an account?{' '}
               <button type="button" onClick={() => switchMode('register')} className="font-medium text-brand-orange hover:underline">
-                Create account
+                Register your clinic or pharmacy
               </button>
             </>
           )}
         </p>
-
-        {mode === 'register' && (
-          <p className="mt-2 text-center text-xs text-gray-400">
-            {isFacility ? (
-              <>
-                Individual account?{' '}
-                <button type="button" onClick={() => { setAccountType('user'); resetForm(); }} className="text-brand-orange hover:underline">
-                  Register as user
-                </button>
-              </>
-            ) : (
-              <>
-                Clinic or pharmacy?{' '}
-                <button type="button" onClick={() => { setAccountType('facility'); resetForm(); }} className="text-brand-orange hover:underline">
-                  Register your facility
-                </button>
-              </>
-            )}
-          </p>
-        )}
       </div>
     </div>
   );

@@ -6,31 +6,11 @@ const { normalizeEmail, emailWhere } = require('../utils/email');
 
 const findByEmail = (email) => User.findOne({ where: emailWhere(sequelize, email) });
 
-const register = async ({ email, password, firstName, lastName, latitude, longitude, role }) => {
-  if (role === 'admin') {
-    throw new AppError('Admin accounts cannot be created via registration', 403);
-  }
-
-  const normalizedEmail = normalizeEmail(email);
-  const existing = await findByEmail(normalizedEmail);
-  if (existing) throw new AppError('Email already registered', 409);
-
-  if (config.admin.email && normalizedEmail === normalizeEmail(config.admin.email)) {
-    throw new AppError('This email is reserved for the system administrator', 403);
-  }
-
-  const user = await User.create({
-    email: normalizedEmail,
-    password,
-    firstName,
-    lastName,
-    latitude,
-    longitude,
-    role: 'user',
-  });
-
-  const token = generateToken(user);
-  return { user, token };
+const register = async () => {
+  throw new AppError(
+    'Patient accounts are not available. Use the free symptom checker. Clinics and pharmacies must register a facility account.',
+    403
+  );
 };
 
 const registerFacility = async ({
@@ -92,10 +72,16 @@ const registerFacility = async ({
   return { user, token };
 };
 
+const ALLOWED_LOGIN_ROLES = ['admin', 'facility', 'health_worker'];
+
 const login = async ({ email, password }) => {
   const user = await findByEmail(email);
   if (!user || !(await user.comparePassword(password))) {
     throw new AppError('Invalid email or password', 401);
+  }
+
+  if (!ALLOWED_LOGIN_ROLES.includes(user.role)) {
+    throw new AppError('Patient accounts are not required. Use the free symptom checker without logging in.', 403);
   }
 
   const token = generateToken(user);
