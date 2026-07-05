@@ -34,6 +34,7 @@ export const api = {
   me: () => request('/auth/me'),
   triageAnalyze: (symptoms) => request('/triage/analyze', { method: 'POST', body: JSON.stringify({ symptoms }) }),
   triagePublic: (body) => request('/triage/public', { method: 'POST', body: JSON.stringify(body) }),
+  triageFindMedicines: (body) => request('/triage/find-medicines', { method: 'POST', body: JSON.stringify(body) }),
   triageSymptoms: () => request('/triage/symptoms'),
   triageHistory: () => request('/triage/history'),
   facilities: (params = {}) => {

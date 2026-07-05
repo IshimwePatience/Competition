@@ -115,6 +115,92 @@ const matchByMedicine = async ({ latitude, longitude, facilityType, medicineCate
   };
 };
 
+const medicineInStock = (stock = [], query) => {
+  const q = String(query || '').trim().toLowerCase();
+  if (!q) return null;
+  return (stock || []).find((item) => {
+    if (!item || item.status === 'out_of_stock') return false;
+    const name = String(item.name || '').toLowerCase();
+    const cat = String(item.category || '').toLowerCase();
+    return name.includes(q) || q.includes(name) || cat.includes(q) || q.includes(cat);
+  });
+};
+
+const matchByCategoryNoLocation = async ({ facilityType, medicineCategory }) => {
+  const category = String(medicineCategory || '').trim().toLowerCase();
+  const where = {};
+  if (facilityType && ['pharmacy', 'clinic'].includes(facilityType)) where.type = facilityType;
+
+  const facilities = await Facility.findAll({ where, order: [['trustScore', 'DESC']] });
+
+  const stocked = facilities
+    .map((f) => {
+      const hit = (f.medicineStock || []).find((item) => {
+        if (!item || item.status === 'out_of_stock') return false;
+        const name = String(item.name || '').toLowerCase();
+        const cat = String(item.category || '').toLowerCase();
+        return cat.includes(category) || category.includes(cat) || name.includes(category);
+      });
+      if (!hit) return null;
+      return { ...f.toJSON(), matchedMedicine: hit.name, stockConfirmed: true };
+    })
+    .filter(Boolean);
+
+  if (stocked.length > 0) {
+    return {
+      facility: stocked[0],
+      stockConfirmed: true,
+      alternatives: stocked.slice(1, 5),
+      allMatches: stocked,
+    };
+  }
+
+  const fallback = facilities.slice(0, 5).map((f) => ({ ...f.toJSON(), stockConfirmed: false }));
+  return {
+    facility: fallback[0] || null,
+    stockConfirmed: false,
+    alternatives: fallback.slice(1),
+    allMatches: fallback,
+  };
+};
+
+const findFacilitiesWithMedicines = async (medicineNames = []) => {
+  const queries = medicineNames.map((n) => String(n).trim()).filter(Boolean);
+  if (queries.length === 0) return { medicines: [], facilities: [] };
+
+  const facilities = await Facility.findAll({ order: [['trustScore', 'DESC']] });
+
+  const results = facilities
+    .map((f) => {
+      const matchedMedicines = queries
+        .map((q) => {
+          const item = medicineInStock(f.medicineStock, q);
+          return item ? { requested: q, name: item.name, quantity: item.quantity, status: item.status } : null;
+        })
+        .filter(Boolean);
+
+      if (matchedMedicines.length === 0) return null;
+
+      return {
+        id: f.id,
+        name: f.name,
+        type: f.type,
+        address: f.address,
+        phone: f.phone,
+        openingHours: f.openingHours,
+        latitude: f.latitude,
+        longitude: f.longitude,
+        isOpen: f.isOpen,
+        matchedMedicines,
+        matchCount: matchedMedicines.length,
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.matchCount - a.matchCount);
+
+  return { medicines: queries, facilities: results };
+};
+
 module.exports = {
   getOwnedFacility,
   updateOwnedFacility,
@@ -122,5 +208,7 @@ module.exports = {
   setStock,
   normalizeStock,
   matchByMedicine,
+  matchByCategoryNoLocation,
+  findFacilitiesWithMedicines,
   listMedicineSuggestions: () => COMMON_MEDICINES,
 };

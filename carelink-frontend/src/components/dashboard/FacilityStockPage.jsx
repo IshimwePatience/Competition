@@ -18,29 +18,20 @@ const statusFromQty = (qty) => {
   return 'in_stock';
 };
 
-export default function FacilityOwnerPage() {
-  const [facility, setFacility] = useState(null);
+export default function FacilityStockPage({ onCountChange }) {
   const [stock, setStock] = useState([]);
-  const [profile, setProfile] = useState({});
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState('');
+  const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const [draft, setDraft] = useState({ name: '', category: '', quantity: 1 });
 
   const load = async () => {
     setLoading(true);
     try {
-      const [fRes, sRes] = await Promise.all([api.myFacility(), api.myFacilityStock()]);
-      setFacility(fRes.data);
-      setProfile({
-        name: fRes.data.name,
-        type: fRes.data.type,
-        address: fRes.data.address,
-        phone: fRes.data.phone || '',
-        openingHours: fRes.data.openingHours || '',
-        isOpen: fRes.data.isOpen,
-      });
-      setStock(sRes.data || []);
+      const res = await api.myFacilityStock();
+      const items = res.data || [];
+      setStock(items);
+      onCountChange?.(items.length);
     } finally {
       setLoading(false);
     }
@@ -50,29 +41,17 @@ export default function FacilityOwnerPage() {
 
   const suggestions = useMemo(() => COMMON_MEDICINES, []);
 
-  const saveProfile = async () => {
-    setBusy('profile');
-    try {
-      const res = await api.updateMyFacility(profile);
-      setFacility(res.data);
-      setMsg('Profile updated');
-    } catch (err) {
-      setMsg(err.message || 'Failed to update profile');
-    } finally {
-      setBusy('');
-    }
-  };
-
   const saveStock = async (nextStock) => {
-    setBusy('stock');
+    setBusy(true);
     try {
       const res = await api.updateMyFacilityStock(nextStock);
       setStock(res.data);
+      onCountChange?.(res.data.length);
       setMsg('Medicine stock updated');
     } catch (err) {
       setMsg(err.message || 'Failed to update stock');
     } finally {
-      setBusy('');
+      setBusy(false);
     }
   };
 
@@ -91,6 +70,13 @@ export default function FacilityOwnerPage() {
     setDraft({ name: '', category: '', quantity: 1 });
   };
 
+  const updateQuantity = (name, quantity) => {
+    const qty = Math.max(0, Number(quantity) || 0);
+    saveStock(stock.map((s) =>
+      s.name === name ? { ...s, quantity: qty, status: statusFromQty(qty) } : s
+    ));
+  };
+
   const removeMedicine = (name) => {
     saveStock(stock.filter((s) => s.name !== name));
   };
@@ -104,26 +90,9 @@ export default function FacilityOwnerPage() {
   }
 
   return (
-    <div className="space-y-8">
-      {msg && <p className="text-[12px] text-gray-500">{msg}</p>}
-
-      <TablePanel title="Facility Profile" subtitle="Manage your clinic or pharmacy details">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <input className="rounded-xl border border-gray-200 px-4 py-3 text-sm" placeholder="Facility name" value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} />
-          <select className="rounded-xl border border-gray-200 px-4 py-3 text-sm" value={profile.type} onChange={(e) => setProfile({ ...profile, type: e.target.value })}>
-            <option value="clinic">Clinic</option>
-            <option value="pharmacy">Pharmacy</option>
-          </select>
-          <input className="sm:col-span-2 rounded-xl border border-gray-200 px-4 py-3 text-sm" placeholder="Address" value={profile.address} onChange={(e) => setProfile({ ...profile, address: e.target.value })} />
-          <input className="rounded-xl border border-gray-200 px-4 py-3 text-sm" placeholder="Phone" value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} />
-          <input className="rounded-xl border border-gray-200 px-4 py-3 text-sm" placeholder="Opening hours" value={profile.openingHours} onChange={(e) => setProfile({ ...profile, openingHours: e.target.value })} />
-        </div>
-        <button type="button" disabled={busy === 'profile'} onClick={saveProfile} className="mt-3 rounded-xl bg-brand-peach px-4 py-2 text-sm font-semibold text-white hover:bg-brand-peachHover disabled:opacity-60">
-          Save Profile
-        </button>
-      </TablePanel>
-
-      <TablePanel title="Medicine Stock" subtitle="List all medicines you carry — patients rely on this data" count={stock.length}>
+    <div>
+      {msg && <p className="mb-4 text-[12px] text-gray-500">{msg}</p>}
+      <TablePanel subtitle="List all medicines you carry — patients rely on this data" count={stock.length}>
         <div className="mb-4 grid gap-3 sm:grid-cols-4">
           <input
             list="medicine-suggestions"
@@ -139,7 +108,7 @@ export default function FacilityOwnerPage() {
             {suggestions.map((m) => <option key={m.name} value={m.name} />)}
           </datalist>
           <input type="number" min="0" className="rounded-xl border border-gray-200 px-4 py-3 text-sm" placeholder="Qty" value={draft.quantity} onChange={(e) => setDraft({ ...draft, quantity: e.target.value })} />
-          <button type="button" onClick={addMedicine} disabled={busy === 'stock'} className="rounded-xl bg-brand-peach px-4 py-3 text-sm font-semibold text-white hover:bg-brand-peachHover disabled:opacity-60">
+          <button type="button" onClick={addMedicine} disabled={busy} className="rounded-xl bg-brand-peach px-4 py-3 text-sm font-semibold text-white hover:bg-brand-peachHover disabled:opacity-60">
             Add
           </button>
         </div>
@@ -160,7 +129,16 @@ export default function FacilityOwnerPage() {
               <TableRow key={item.name}>
                 <TablePrimaryCell title={item.name} subtitle={item.category} />
                 <TableCell className="capitalize">{item.category}</TableCell>
-                <TableCell>{item.quantity}</TableCell>
+                <TableCell>
+                  <input
+                    type="number"
+                    min="0"
+                    value={item.quantity}
+                    onChange={(e) => updateQuantity(item.name, e.target.value)}
+                    disabled={busy}
+                    className="w-20 rounded-lg border border-gray-200 px-2 py-1 text-sm"
+                  />
+                </TableCell>
                 <TableCell>
                   <StatusBadge
                     status={item.status === 'in_stock' ? 'open' : item.status === 'low_stock' ? 'pending' : 'closed'}
@@ -168,7 +146,7 @@ export default function FacilityOwnerPage() {
                   />
                 </TableCell>
                 <TableCell>
-                  <TableActionButton variant="danger" onClick={() => removeMedicine(item.name)} disabled={busy === 'stock'}>
+                  <TableActionButton variant="danger" onClick={() => removeMedicine(item.name)} disabled={busy}>
                     Remove
                   </TableActionButton>
                 </TableCell>

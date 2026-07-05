@@ -76,6 +76,20 @@ const publicTriageRules = [
   body('longitude').optional().isFloat({ min: -180, max: 180 }),
 ];
 
+const findMedicinesRules = [
+  body('medicineText').optional().trim().isLength({ min: 1, max: 2000 }),
+  body('medicines').optional().isArray({ min: 1 }),
+  body('medicines.*').optional().trim().notEmpty(),
+  body().custom((_, { req }) => {
+    const text = req.body.medicineText?.trim();
+    const list = Array.isArray(req.body.medicines) ? req.body.medicines.filter(Boolean) : [];
+    if (!text && list.length === 0) {
+      throw new Error('Enter at least one medicine name');
+    }
+    return true;
+  }),
+];
+
 const stockRules = [
   body('medicineStock').isArray().withMessage('Medicine stock must be an array'),
   body('medicineStock.*.name').trim().notEmpty(),
@@ -89,6 +103,7 @@ module.exports = {
   loginRules,
   facilityRegisterRules,
   publicTriageRules,
+  findMedicinesRules,
   stockRules,
   triageRules,
   facilityCreateRules,

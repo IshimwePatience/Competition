@@ -63,7 +63,7 @@ export default function Landing() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [authMode, setAuthMode] = useState(null);
-  const [authAccountType, setAuthAccountType] = useState('user');
+  const [authAccountType, setAuthAccountType] = useState('facility');
   const [authError, setAuthError] = useState('');
   const [activeSection, setActiveSection] = useState('pharmacy');
 

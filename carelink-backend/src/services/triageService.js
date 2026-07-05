@@ -3,6 +3,12 @@ const config = require('../config');
 const { TriageSession } = require('../models');
 const AppError = require('../utils/AppError');
 const facilityOwnerService = require('./facilityOwnerService');
+const { COMMON_MEDICINES } = require('../constants/medicines');
+
+const MEDICINE_NORMALIZE_PROMPT = `You help match medicine names patients were told to find at a pharmacy.
+Given medicine names (brand names, misspellings, or local names), respond with ONLY valid JSON:
+{ "medicines": ["standardized generic name 1", "standardized generic name 2"] }
+Use common names like Paracetamol, Amoxicillin, Ibuprofen.`;
 
 const TRIAGE_PROMPT = `You are a healthcare routing assistant for CareLink. You do NOT diagnose conditions.
 Given patient symptoms, respond with ONLY valid JSON (no markdown, no extra text):
@@ -154,14 +160,21 @@ const analyzePublicSymptoms = async ({ symptoms, latitude, longitude }) => {
   const symptomsText = cleaned.join(', ');
   const { result, aiRawResponse, usedFallback } = await runTriageAI(symptomsText);
 
-  let match = { facility: null, stockConfirmed: false, alternatives: [] };
+  let match = { facility: null, stockConfirmed: false, alternatives: [], allMatches: [] };
+  const facilityType = result.recommendedFacility === 'pharmacy' || result.recommendedFacility === 'clinic'
+    ? result.recommendedFacility
+    : undefined;
+
   if (latitude != null && longitude != null) {
     match = await facilityOwnerService.matchByMedicine({
       latitude,
       longitude,
-      facilityType: result.recommendedFacility === 'pharmacy' || result.recommendedFacility === 'clinic'
-        ? result.recommendedFacility
-        : undefined,
+      facilityType,
+      medicineCategory: result.likelyMedicineCategory,
+    });
+  } else {
+    match = await facilityOwnerService.matchByCategoryNoLocation({
+      facilityType,
       medicineCategory: result.likelyMedicineCategory,
     });
   }
@@ -176,7 +189,72 @@ const analyzePublicSymptoms = async ({ symptoms, latitude, longitude }) => {
     matchedFacility: match.facility,
     stockConfirmed: match.stockConfirmed,
     alternativeFacilities: match.alternatives,
+    facilityMatches: match.allMatches || [],
     aiRawResponse: { ...aiRawResponse, usedFallback },
+  };
+};
+
+const fallbackNormalizeMedicines = (parts) =>
+  parts.map((part) => {
+    const lower = part.toLowerCase();
+    const known = COMMON_MEDICINES.find(
+      (m) => m.name.toLowerCase().includes(lower) || lower.includes(m.name.toLowerCase())
+    );
+    return known ? known.name : part;
+  });
+
+const normalizeMedicineNames = async (raw) => {
+  const parts = String(raw || '')
+    .split(/[,\n;]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (parts.length === 0) throw new AppError('Enter at least one medicine name', 400);
+
+  if (config.gemini.apiKey && config.gemini.apiKey !== 'your-gemini-api-key-here') {
+    try {
+      const genAI = new GoogleGenerativeAI(config.gemini.apiKey);
+      const model = genAI.getGenerativeModel({
+        model: config.gemini.model,
+        generationConfig: { responseMimeType: 'application/json' },
+      });
+      const response = await model.generateContent([
+        { text: MEDICINE_NORMALIZE_PROMPT },
+        { text: `Medicines: ${parts.join(', ')}` },
+      ]);
+      let cleaned = response.response.text().trim();
+      if (cleaned.startsWith('```')) {
+        cleaned = cleaned.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+      }
+      const parsed = JSON.parse(cleaned);
+      if (Array.isArray(parsed.medicines) && parsed.medicines.length > 0) {
+        return { medicines: parsed.medicines.map((m) => String(m).trim()).filter(Boolean), usedAi: true };
+      }
+    } catch (err) {
+      console.warn('[Triage] Medicine normalize fallback:', err.message);
+    }
+  }
+
+  return { medicines: fallbackNormalizeMedicines(parts), usedAi: false };
+};
+
+const findPublicMedicines = async ({ medicines, medicineText }) => {
+  let names = [];
+  if (Array.isArray(medicines) && medicines.length > 0) {
+    names = medicines.map((m) => String(m).trim()).filter(Boolean);
+  } else if (medicineText) {
+    const normalized = await normalizeMedicineNames(medicineText);
+    names = normalized.medicines;
+  }
+  if (names.length === 0) throw new AppError('Enter at least one medicine name', 400);
+
+  const { facilities } = await facilityOwnerService.findFacilitiesWithMedicines(names);
+
+  return {
+    medicines: names,
+    facilities,
+    message: facilities.length > 0
+      ? `Found ${facilities.length} facilit${facilities.length === 1 ? 'y' : 'ies'} with your medicine${names.length > 1 ? 's' : ''} in stock`
+      : 'No facilities currently list these medicines in stock — try a different name or call ahead',
   };
 };
 
@@ -191,4 +269,4 @@ const getHistory = async (userId, { page = 1, limit = 10 }) => {
   return { sessions: rows, total: count, page, limit };
 };
 
-module.exports = { analyzeSymptoms, analyzePublicSymptoms, getHistory };
+module.exports = { analyzeSymptoms, analyzePublicSymptoms, findPublicMedicines, getHistory };
