@@ -59,7 +59,7 @@ export default function AdminAIPage() {
       </div>
 
       {answer && (
-        <div className="rounded-xl border border-gray-100 bg-orange-50 px-4 py-4 text-sm text-gray-800 whitespace-pre-wrap">
+        <div className="rounded-xl border border-gray-100 px-4 py-4 text-sm text-gray-800 whitespace-pre-wrap">
           {answer}
         </div>
       )}

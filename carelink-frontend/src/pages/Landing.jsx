@@ -10,8 +10,6 @@ const img = (id, w, h) =>
 
 const IMG = {
   hero: img('photo-1666214280557-f1b5022eb634', 900, 600),
-  clinic: img('photo-1519494026892-80bbd2d6fd0d', 600, 400),
-  pharmacy: img('photo-1584308666744-24d5c474f2ae', 600, 400),
   doctor: img('photo-1612349317150-e413f6a5b16d', 600, 400),
   nurse: img('photo-1573496359142-b8d87734a5a2', 150, 150),
   patient: img('photo-1507003211169-0a1dd7228f2d', 150, 150),
@@ -128,54 +126,30 @@ export default function Landing() {
       <main>
         {/* ── HERO — Petsmart split banner ── */}
         <section className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
-          <div className="grid gap-4 lg:grid-cols-3">
-            <div className="relative overflow-hidden rounded-3xl bg-brand-orange lg:col-span-2">
-              <div className="flex h-full min-h-[280px] flex-col justify-between p-8 sm:min-h-[320px] sm:p-10">
-                <div>
-                  <h1 className="text-3xl font-bold leading-tight text-white sm:text-4xl">
-                    Find care that&apos;s actually open
-                  </h1>
-                  <p className="mt-3 max-w-md text-sm leading-relaxed text-white/90 sm:text-base">
-                    Discover nearby clinics with live wait times, medicine stock, and AI-powered symptom triage — no more wasted trips.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setAuthMode('register')}
-                  className="mt-6 w-fit rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-brand-orange hover:bg-white/90"
-                >
-                  Get Started
-                </button>
+          <div className="relative overflow-hidden rounded-3xl bg-brand-orange">
+            <div className="flex h-full min-h-[280px] flex-col justify-between p-8 sm:min-h-[320px] sm:p-10">
+              <div>
+                <h1 className="text-3xl font-bold leading-tight text-white sm:text-4xl">
+                  Find care that&apos;s actually open
+                </h1>
+                <p className="mt-3 max-w-md text-sm leading-relaxed text-white/90 sm:text-base">
+                  Discover nearby clinics with live wait times, medicine stock, and AI-powered symptom triage — no more wasted trips.
+                </p>
               </div>
-              <img
-                src={IMG.hero}
-                alt="Healthcare team in modern clinic"
-                className="absolute bottom-0 right-0 hidden h-full w-1/2 object-cover object-center sm:block"
-                style={{ maskImage: 'linear-gradient(to left, black 60%, transparent)' }}
-              />
+              <button
+                type="button"
+                onClick={() => setAuthMode('register')}
+                className="mt-6 w-fit rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-brand-orange hover:bg-white/90"
+              >
+                Get Started
+              </button>
             </div>
-
-            <div className="flex flex-col gap-4">
-              {[
-                { id: 'clinic', label: 'Clinics', img: IMG.clinic, sub: 'Live status & wait times' },
-                { id: 'pharmacy', label: 'Pharmacies', img: IMG.pharmacy, sub: 'Medicine stock updates' },
-              ].map((card) => (
-                <div key={card.id} id={card.id} className="scroll-mt-28">
-                <button
-                  type="button"
-                  onClick={() => setAuthMode('register')}
-                  className="group relative flex w-full flex-1 overflow-hidden rounded-3xl bg-brand-cream text-left"
-                >
-                  <img src={card.img} alt={card.label} className="h-36 w-full object-cover transition group-hover:scale-105 sm:h-auto sm:min-h-[148px]" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                  <div className="absolute bottom-4 left-4">
-                    <p className="text-lg font-bold text-white">{card.label}</p>
-                    <p className="text-xs text-white/80">{card.sub}</p>
-                  </div>
-                </button>
-                </div>
-              ))}
-            </div>
+            <img
+              src={IMG.hero}
+              alt="Healthcare team in modern clinic"
+              className="absolute bottom-0 right-0 hidden h-full w-1/2 object-cover object-center sm:block"
+              style={{ maskImage: 'linear-gradient(to left, black 60%, transparent)' }}
+            />
           </div>
         </section>
 

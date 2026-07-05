@@ -11,7 +11,7 @@ const TAB_MEDICINES = 'medicines';
 
 function FacilityCard({ facility, stockLabel }) {
   return (
-    <div className="rounded-xl bg-orange-50 px-4 py-3 text-sm">
+    <div className="rounded-xl border border-gray-100 px-4 py-3 text-sm">
       <p className="font-semibold text-gray-900">{facility.name}</p>
       <p className="text-gray-600">{facility.address}</p>
       {facility.phone && <p className="text-gray-500">{facility.phone}</p>}
@@ -202,7 +202,7 @@ export default function SymptomTriagePage() {
       />
 
       <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-        <h1 className="text-2xl font-bold text-gray-900">Check your symptoms</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Find care</h1>
         <p className="mt-1 text-sm text-gray-500">
           No account needed — we&apos;ll find care with medicine in stock.
         </p>
@@ -344,7 +344,7 @@ export default function SymptomTriagePage() {
                       type="button"
                       disabled={loading}
                       onClick={() => chooseMedicineSuggestion(prompt.typed, name)}
-                      className="rounded-full border border-brand-orange bg-white px-4 py-2 text-sm font-medium text-gray-800 shadow-sm transition hover:bg-orange-50 disabled:opacity-50"
+                      className="rounded-full border border-brand-orange bg-white px-4 py-2 text-sm font-medium text-brand-orange shadow-sm transition hover:bg-brand-cream disabled:opacity-50"
                     >
                       {name}
                     </button>
@@ -366,11 +366,11 @@ export default function SymptomTriagePage() {
         {tab === TAB_SYMPTOMS && symptomResult && (
           <div className="mt-6 space-y-4 rounded-2xl border border-gray-100 p-5">
             <p className="text-sm text-gray-700">
-              <span className="font-semibold capitalize">{symptomResult.urgency} urgency</span>
+              <span className="font-semibold capitalize text-brand-orange">{symptomResult.urgency} urgency</span>
               {' — '}{symptomResult.reason}
             </p>
             <p className="text-sm text-gray-600">
-              Recommended: <span className="font-semibold capitalize">{symptomResult.recommendedFacility}</span>
+              Recommended: <span className="font-semibold capitalize text-brand-orange">{symptomResult.recommendedFacility}</span>
               {symptomResult.likelyMedicineCategory && (
                 <> · May need: <span className="font-semibold capitalize">{symptomResult.likelyMedicineCategory}</span></>
               )}
@@ -404,7 +404,7 @@ export default function SymptomTriagePage() {
             <p className="text-sm text-gray-700">{medicineResult.message}</p>
             {medicineResult.medicines?.length > 0 && (
               <p className="text-sm text-gray-600">
-                Searched for: <span className="font-semibold">{medicineResult.medicines.join(', ')}</span>
+                Searched for: <span className="font-semibold text-brand-orange">{medicineResult.medicines.join(', ')}</span>
               </p>
             )}
 
