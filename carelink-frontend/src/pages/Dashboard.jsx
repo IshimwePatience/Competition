@@ -74,7 +74,7 @@ export default function Dashboard() {
       <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
       <div className="flex h-screen flex-col pl-56">
-        {activeTab !== 'users' && (
+        {activeTab !== 'users' && activeTab !== 'facility-stock' && (
           <Topbar
             pageTitle={meta.title}
             pageSubtitle={meta.subtitle}
@@ -83,7 +83,7 @@ export default function Dashboard() {
           />
         )}
 
-        <main className={`flex-1 overflow-y-auto bg-white ${activeTab === 'users' ? '' : 'px-8 py-6'}`}>
+        <main className={`flex-1 overflow-y-auto bg-white ${activeTab === 'users' || activeTab === 'facility-stock' ? '' : 'px-8 py-6'}`}>
           {isFacility && activeTab === 'facility-profile' && <FacilityProfilePage />}
           {isFacility && activeTab === 'facility-stock' && (
             <FacilityStockPage onCountChange={setStockCount} />
