@@ -215,6 +215,8 @@ export default function AuthModal({ mode: initialMode = 'register', accountType:
         {/* ── REGISTER STEP 1: 3 fields ── */}
         {mode === 'register' && step === 1 && (
           <form onSubmit={handleNext} className="space-y-3">
+            <button type="button" onClick={handleGoogleLogin} className="mb-1 flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50"><GoogleIcon />Sign up with Google</button>
+            <div className="relative my-2 flex items-center"><div className="flex-grow border-t border-gray-200"></div><span className="mx-3 text-xs text-gray-400">or</span><div className="flex-grow border-t border-gray-200"></div></div>
             <input type="text" placeholder="First name" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} className={inputClass('firstName')} />
             {fieldErrors.firstName && <p className="text-xs text-red-500">{fieldErrors.firstName}</p>}
             <input type="text" placeholder="Last name" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} className={inputClass('lastName')} />
