@@ -1,10 +1,16 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
-import Logo from '../components/Logo';
+import AuthModal from '../components/AuthModal';
+import PublicNavbar from '../components/layout/PublicNavbar';
 import { COMMON_SYMPTOMS } from '../constants/health';
 
 export default function SymptomTriagePage() {
+  const { isAuthenticated, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const [authMode, setAuthMode] = useState(null);
+  const [authAccountType, setAuthAccountType] = useState('user');
   const [symptoms, setSymptoms] = useState([]);
   const [coords, setCoords] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -45,18 +51,26 @@ export default function SymptomTriagePage() {
     }
   };
 
+  if (authLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-brand-orange border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (isAuthenticated) return <Navigate to="/dashboard" replace />;
+
   const facility = result?.matchedFacility;
 
   return (
-    <div className="min-h-screen bg-white">
-      <header className="border-b border-gray-100 px-6 py-4">
-        <div className="mx-auto flex max-w-3xl items-center justify-between">
-          <Logo />
-          <Link to="/" className="text-sm text-gray-500 hover:text-gray-800">Home</Link>
-        </div>
-      </header>
+    <div className="min-h-screen bg-white font-sans text-gray-900">
+      <PublicNavbar
+        onLogin={() => setAuthMode('login')}
+        onSignUp={() => setAuthMode('register')}
+      />
 
-      <main className="mx-auto max-w-3xl px-6 py-10">
+      <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
         <h1 className="text-2xl font-bold text-gray-900">Check your symptoms</h1>
         <p className="mt-1 text-sm text-gray-500">No account needed — we&apos;ll find nearby care with medicine in stock.</p>
 
@@ -124,6 +138,23 @@ export default function SymptomTriagePage() {
           </div>
         )}
       </main>
+
+      {authMode && (
+        <AuthModal
+          key={`${authMode}-${authAccountType}`}
+          mode={authMode}
+          accountType={authAccountType}
+          onClose={() => {
+            setAuthMode(null);
+            setAuthAccountType('user');
+          }}
+          onSuccess={() => {
+            setAuthMode(null);
+            setAuthAccountType('user');
+            navigate('/dashboard');
+          }}
+        />
+      )}
     </div>
   );
 }
