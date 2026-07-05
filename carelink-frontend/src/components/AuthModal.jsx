@@ -126,7 +126,7 @@ export default function AuthModal({ mode: initialMode = 'register', onClose, onS
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = '/api/v1/auth/google';
+    window.location.href = `${import.meta.env.VITE_API_URL || "/api/v1"}/auth/google`;
   };
 
   return (
