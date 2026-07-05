@@ -24,12 +24,13 @@ function EyeIcon({ off }) {
   );
 }
 
-export default function AuthModal({ mode: initialMode = 'register', onClose, onSuccess }) {
+export default function AuthModal({ mode: initialMode = 'register', onClose, onSuccess, initialError = '' }) {
   const [mode, setMode] = useState(initialMode);
+  const [step, setStep] = useState(1);
   const { login, register } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(initialError);
   const [accepted, setAccepted] = useState(false);
   const [form, setForm] = useState({
     firstName: '',
@@ -39,36 +40,67 @@ export default function AuthModal({ mode: initialMode = 'register', onClose, onS
   });
   const [fieldErrors, setFieldErrors] = useState({});
 
-  const validate = () => {
+  const resetForm = () => {
+    setStep(1);
+    setError('');
+    setFieldErrors({});
+    setAccepted(false);
+  };
+
+  const switchMode = (nextMode) => {
+    setMode(nextMode);
+    resetForm();
+  };
+
+  const inputClass = (field) =>
+    `w-full rounded-xl border px-4 py-3 text-sm transition-colors ${
+      fieldErrors[field] ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-white'
+    }`;
+
+  const validateStep1 = () => {
     const errs = {};
-    if (mode === 'register') {
-      if (!form.firstName.trim()) errs.firstName = 'First name required';
-      if (!form.lastName.trim()) errs.lastName = 'Last name required';
-      if (!accepted) errs.terms = 'You must accept the terms';
-    }
+    if (!form.firstName.trim()) errs.firstName = 'First name required';
+    if (!form.lastName.trim()) errs.lastName = 'Last name required';
+    setFieldErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const validateStep2 = () => {
+    const errs = {};
+    if (!form.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errs.email = 'Valid email required';
+    if (!form.password || form.password.length < 6) errs.password = 'Password must be at least 6 characters';
+    if (!accepted) errs.terms = 'You must accept the terms';
+    setFieldErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const validateLogin = () => {
+    const errs = {};
     if (!form.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errs.email = 'Valid email required';
     if (!form.password || form.password.length < 6) errs.password = 'Password must be at least 6 characters';
     setFieldErrors(errs);
     return Object.keys(errs).length === 0;
   };
 
-  const handleSubmit = async (e) => {
+  const handleNext = (e) => {
     e.preventDefault();
     setError('');
-    if (!validate()) return;
+    if (validateStep1()) setStep(2);
+  };
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setError('');
+    if (!validateStep2()) return;
 
     setLoading(true);
     try {
-      if (mode === 'login') {
-        await login(form.email, form.password);
-      } else {
-        await register({
-          firstName: form.firstName,
-          lastName: form.lastName,
-          email: form.email,
-          password: form.password,
-        });
-      }
+      await register({
+        firstName: form.firstName,
+        lastName: form.lastName,
+        email: form.email,
+        password: form.password,
+      });
       onSuccess?.();
     } catch (err) {
       setError(err.message || 'Something went wrong');
@@ -77,10 +109,25 @@ export default function AuthModal({ mode: initialMode = 'register', onClose, onS
     }
   };
 
-  const inputClass = (field) =>
-    `w-full rounded-xl border px-4 py-3 text-sm transition-colors ${
-      fieldErrors[field] ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-white'
-    }`;
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError('');
+    if (!validateLogin()) return;
+
+    setLoading(true);
+    try {
+      await login(form.email, form.password);
+      onSuccess?.();
+    } catch (err) {
+      setError(err.message || 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = () => {
+    window.location.href = '/api/v1/auth/google';
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -99,78 +146,95 @@ export default function AuthModal({ mode: initialMode = 'register', onClose, onS
           <Logo size="lg" />
         </div>
 
-        <h2 className="mb-6 text-center text-xl font-bold text-gray-900">
+        <h2 className="mb-2 text-center text-xl font-bold text-gray-900">
           {mode === 'register' ? 'Get started with CareLink' : 'Welcome back'}
         </h2>
 
-        <button
-          type="button"
-          className="mb-4 flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-        >
-          <GoogleIcon />
-          Sign in with Google
-        </button>
+        {mode === 'register' && (
+          <p className="mb-6 text-center text-xs text-gray-400">
+            Step {step} of 2
+          </p>
+        )}
+
+        {mode === 'register' && step === 1 && (
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            className="mb-4 flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+          >
+            <GoogleIcon />
+            Sign in with Google
+          </button>
+        )}
 
         {error && (
           <div className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-3">
-          {mode === 'register' && (
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <input
-                  type="text"
-                  placeholder="First name"
-                  value={form.firstName}
-                  onChange={(e) => setForm({ ...form, firstName: e.target.value })}
-                  className={inputClass('firstName')}
-                />
-                {fieldErrors.firstName && <p className="mt-1 text-xs text-red-500">{fieldErrors.firstName}</p>}
-              </div>
-              <div>
-                <input
-                  type="text"
-                  placeholder="Last name"
-                  value={form.lastName}
-                  onChange={(e) => setForm({ ...form, lastName: e.target.value })}
-                  className={inputClass('lastName')}
-                />
-                {fieldErrors.lastName && <p className="mt-1 text-xs text-red-500">{fieldErrors.lastName}</p>}
-              </div>
+        {/* ── REGISTER STEP 1: name fields stacked vertically ── */}
+        {mode === 'register' && step === 1 && (
+          <form onSubmit={handleNext} className="space-y-3">
+            <div>
+              <input
+                type="text"
+                placeholder="First name"
+                value={form.firstName}
+                onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+                className={inputClass('firstName')}
+              />
+              {fieldErrors.firstName && <p className="mt-1 text-xs text-red-500">{fieldErrors.firstName}</p>}
             </div>
-          )}
+            <div>
+              <input
+                type="text"
+                placeholder="Last name"
+                value={form.lastName}
+                onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+                className={inputClass('lastName')}
+              />
+              {fieldErrors.lastName && <p className="mt-1 text-xs text-red-500">{fieldErrors.lastName}</p>}
+            </div>
 
-          <div>
-            <input
-              type="email"
-              placeholder="Email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className={inputClass('email')}
-            />
-            {fieldErrors.email && <p className="mt-1 text-xs text-red-500">{fieldErrors.email}</p>}
-          </div>
-
-          <div className="relative">
-            <input
-              type={showPassword ? 'text' : 'password'}
-              placeholder="Password"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              className={`${inputClass('password')} pr-12`}
-            />
             <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2"
+              type="submit"
+              className="mt-2 w-full rounded-xl bg-brand-peach py-3.5 text-sm font-semibold text-white transition hover:bg-brand-peachHover"
             >
-              <EyeIcon off={showPassword} />
+              Next
             </button>
-            {fieldErrors.password && <p className="mt-1 text-xs text-red-500">{fieldErrors.password}</p>}
-          </div>
+          </form>
+        )}
 
-          {mode === 'register' && (
+        {/* ── REGISTER STEP 2: email + password stacked vertically ── */}
+        {mode === 'register' && step === 2 && (
+          <form onSubmit={handleRegister} className="space-y-3">
+            <div>
+              <input
+                type="email"
+                placeholder="Email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                className={inputClass('email')}
+              />
+              {fieldErrors.email && <p className="mt-1 text-xs text-red-500">{fieldErrors.email}</p>}
+            </div>
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Password"
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                className={`${inputClass('password')} pr-12`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2"
+              >
+                <EyeIcon off={showPassword} />
+              </button>
+              {fieldErrors.password && <p className="mt-1 text-xs text-red-500">{fieldErrors.password}</p>}
+            </div>
+
             <label className="flex items-start gap-2 pt-1">
               <input
                 type="checkbox"
@@ -183,39 +247,104 @@ export default function AuthModal({ mode: initialMode = 'register', onClose, onS
                 <span className="text-brand-orange">Terms and Conditions</span>
               </span>
             </label>
-          )}
-          {fieldErrors.terms && <p className="text-xs text-red-500">{fieldErrors.terms}</p>}
+            {fieldErrors.terms && <p className="text-xs text-red-500">{fieldErrors.terms}</p>}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="mt-2 w-full rounded-xl bg-brand-peach py-3.5 text-sm font-semibold text-white transition hover:bg-brand-peachHover disabled:opacity-60"
-          >
-            {loading ? (
-              <span className="inline-flex items-center gap-2">
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                Please wait...
-              </span>
-            ) : mode === 'register' ? (
-              'Create Account'
-            ) : (
-              'Log In'
-            )}
-          </button>
-        </form>
+            <div className="mt-2 flex gap-3">
+              <button
+                type="button"
+                onClick={() => { setStep(1); setFieldErrors({}); }}
+                className="w-1/3 rounded-xl border border-gray-200 py-3.5 text-sm font-medium text-gray-600 hover:bg-gray-50"
+              >
+                Back
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex-1 rounded-xl bg-brand-peach py-3.5 text-sm font-semibold text-white transition hover:bg-brand-peachHover disabled:opacity-60"
+              >
+                {loading ? (
+                  <span className="inline-flex items-center gap-2">
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    Please wait...
+                  </span>
+                ) : (
+                  'Create Account'
+                )}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* ── LOGIN: single step ── */}
+        {mode === 'login' && (
+          <form onSubmit={handleLogin} className="space-y-3">
+            <button
+              type="button"
+              onClick={handleGoogleLogin}
+              className="mb-1 flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+            >
+              <GoogleIcon />
+              Sign in with Google
+            </button>
+
+            <div>
+              <input
+                type="email"
+                placeholder="Email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                className={inputClass('email')}
+              />
+              {fieldErrors.email && <p className="mt-1 text-xs text-red-500">{fieldErrors.email}</p>}
+            </div>
+
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Password"
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                className={`${inputClass('password')} pr-12`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2"
+              >
+                <EyeIcon off={showPassword} />
+              </button>
+              {fieldErrors.password && <p className="mt-1 text-xs text-red-500">{fieldErrors.password}</p>}
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="mt-2 w-full rounded-xl bg-brand-peach py-3.5 text-sm font-semibold text-white transition hover:bg-brand-peachHover disabled:opacity-60"
+            >
+              {loading ? (
+                <span className="inline-flex items-center gap-2">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  Please wait...
+                </span>
+              ) : (
+                'Log In'
+              )}
+            </button>
+          </form>
+        )}
 
         <p className="mt-5 text-center text-sm text-gray-600">
           {mode === 'register' ? (
             <>
               Already have an account?{' '}
-              <button type="button" onClick={() => { setMode('login'); setError(''); }} className="font-medium text-brand-orange hover:underline">
+              <button type="button" onClick={() => switchMode('login')} className="font-medium text-brand-orange hover:underline">
                 Login here
               </button>
             </>
           ) : (
             <>
               Don&apos;t have an account?{' '}
-              <button type="button" onClick={() => { setMode('register'); setError(''); }} className="font-medium text-brand-orange hover:underline">
+              <button type="button" onClick={() => switchMode('register')} className="font-medium text-brand-orange hover:underline">
                 Create account
               </button>
             </>

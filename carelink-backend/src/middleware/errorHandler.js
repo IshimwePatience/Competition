@@ -15,7 +15,7 @@ const errorHandler = (err, req, res, next) => {
     message = 'Resource already exists';
   }
 
-  if (config.nodeEnv === 'development') {
+  if (config.nodeEnv === 'development' && statusCode >= 500) {
     console.error('[Error]', err);
   }
 

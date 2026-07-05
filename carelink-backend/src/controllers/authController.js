@@ -1,4 +1,5 @@
 const authService = require('../services/authService');
+const googleAuthService = require('../services/googleAuthService');
 const config = require('../config');
 
 const cookieOptions = {
@@ -82,6 +83,34 @@ const promoteToHealthWorker = async (req, res, next) => {
   }
 };
 
+const googleRedirect = (req, res, next) => {
+  try {
+    res.redirect(googleAuthService.getAuthUrl());
+  } catch (err) {
+    next(err);
+  }
+};
+
+const googleCallback = async (req, res) => {
+  try {
+    const { code, error } = req.query;
+    if (error) {
+      return res.redirect(`${config.clientUrl}/?auth_error=${encodeURIComponent(error)}`);
+    }
+    if (!code) {
+      return res.redirect(`${config.clientUrl}/?auth_error=${encodeURIComponent('Google sign-in was cancelled')}`);
+    }
+
+    const profile = await googleAuthService.exchangeCodeForProfile(code);
+    const result = await authService.loginWithGoogle(profile);
+    setTokenCookie(res, result.token);
+    res.redirect(`${config.clientUrl}/dashboard`);
+  } catch (err) {
+    const message = err.message || 'Google sign-in failed';
+    res.redirect(`${config.clientUrl}/?auth_error=${encodeURIComponent(message)}`);
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -91,4 +120,6 @@ module.exports = {
   listUsers,
   verifyHealthWorker,
   promoteToHealthWorker,
+  googleRedirect,
+  googleCallback,
 };

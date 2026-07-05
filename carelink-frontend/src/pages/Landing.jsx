@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Logo from '../components/Logo';
 import AuthModal from '../components/AuthModal';
@@ -59,8 +59,20 @@ const GRID_IMGS = [IMG.grid1, IMG.grid2, IMG.grid3, IMG.grid4, IMG.grid5, IMG.gr
 
 export default function Landing() {
   const { isAuthenticated, loading } = useAuth();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [authMode, setAuthMode] = useState(null);
+  const [authError, setAuthError] = useState('');
   const [activeSection, setActiveSection] = useState('pharmacy');
+
+  useEffect(() => {
+    const err = searchParams.get('auth_error');
+    if (err) {
+      setAuthMode('login');
+      setAuthError(decodeURIComponent(err));
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     const sections = CATEGORIES.map((c) => document.getElementById(c.id)).filter(Boolean);
@@ -307,9 +319,18 @@ export default function Landing() {
 
       {authMode && (
         <AuthModal
+          key={authMode}
           mode={authMode}
-          onClose={() => setAuthMode(null)}
-          onSuccess={() => setAuthMode(null)}
+          initialError={authError}
+          onClose={() => {
+            setAuthMode(null);
+            setAuthError('');
+          }}
+          onSuccess={() => {
+            setAuthMode(null);
+            setAuthError('');
+            navigate('/dashboard');
+          }}
         />
       )}
     </div>

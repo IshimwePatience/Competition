@@ -10,6 +10,8 @@ const router = express.Router();
 router.post('/register', authLimiter, registerRules, validate, authController.register);
 router.post('/login', authLimiter, loginRules, validate, authController.login);
 router.post('/logout', authController.logout);
+router.get('/google', authController.googleRedirect);
+router.get('/google/callback', authController.googleCallback);
 router.get('/me', authenticate, authController.getProfile);
 router.patch('/me', authenticate, authController.updateProfile);
 router.post('/apply-health-worker', authenticate, authController.promoteToHealthWorker);

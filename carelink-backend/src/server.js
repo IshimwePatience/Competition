@@ -20,6 +20,16 @@ const start = async () => {
     const server = http.createServer(app);
     socketService.init(server);
 
+    server.on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        console.error(`Port ${config.port} is already in use. Stop the other server first:`);
+        console.error(`  netstat -ano | findstr :${config.port}`);
+        console.error('  taskkill /PID <pid> /F');
+        process.exit(1);
+      }
+      throw err;
+    });
+
     server.listen(config.port, () => {
       console.log(`CareLink API running on http://localhost:${config.port}`);
       console.log(`Health check: http://localhost:${config.port}/api/v1/health`);
@@ -27,6 +37,9 @@ const start = async () => {
     });
   } catch (err) {
     console.error('Failed to start server:', err.message);
+    if (err.errors?.length) {
+      err.errors.forEach((e) => console.error(`  - ${e.path}: ${e.message}`));
+    }
     process.exit(1);
   }
 };

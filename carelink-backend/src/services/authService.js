@@ -1,22 +1,26 @@
 const jwt = require('jsonwebtoken');
 const config = require('../config');
-const { User } = require('../models');
+const { User, sequelize } = require('../models');
 const AppError = require('../utils/AppError');
+const { normalizeEmail, emailWhere } = require('../utils/email');
+
+const findByEmail = (email) => User.findOne({ where: emailWhere(sequelize, email) });
 
 const register = async ({ email, password, firstName, lastName, latitude, longitude, role }) => {
   if (role === 'admin') {
     throw new AppError('Admin accounts cannot be created via registration', 403);
   }
 
-  const existing = await User.findOne({ where: { email } });
+  const normalizedEmail = normalizeEmail(email);
+  const existing = await findByEmail(normalizedEmail);
   if (existing) throw new AppError('Email already registered', 409);
 
-  if (config.admin.email && email.toLowerCase() === config.admin.email.toLowerCase()) {
+  if (config.admin.email && normalizedEmail === normalizeEmail(config.admin.email)) {
     throw new AppError('This email is reserved for the system administrator', 403);
   }
 
   const user = await User.create({
-    email,
+    email: normalizedEmail,
     password,
     firstName,
     lastName,
@@ -30,7 +34,7 @@ const register = async ({ email, password, firstName, lastName, latitude, longit
 };
 
 const login = async ({ email, password }) => {
-  const user = await User.findOne({ where: { email } });
+  const user = await findByEmail(email);
   if (!user || !(await user.comparePassword(password))) {
     throw new AppError('Invalid email or password', 401);
   }
@@ -112,9 +116,43 @@ const promoteToHealthWorker = async (userId) => {
   return user;
 };
 
+const loginWithGoogle = async (profile) => {
+  const { googleId, email, firstName, lastName, emailVerified } = profile;
+  const normalizedEmail = email.toLowerCase();
+
+  let user = await User.findOne({ where: { googleId } });
+  if (!user) {
+    user = await findByEmail(normalizedEmail);
+    if (user) {
+      user.googleId = googleId;
+      user.authProvider = 'google';
+      if (emailVerified) user.emailVerified = true;
+      await user.save();
+    } else {
+      const isAdminEmail =
+        config.admin.email && normalizedEmail === normalizeEmail(config.admin.email);
+
+      user = await User.create({
+        email: normalizedEmail,
+        googleId,
+        firstName,
+        lastName,
+        authProvider: 'google',
+        emailVerified: emailVerified || false,
+        role: isAdminEmail ? 'admin' : 'user',
+        isVerified: isAdminEmail,
+      });
+    }
+  }
+
+  const token = generateToken(user);
+  return { user, token };
+};
+
 module.exports = {
   register,
   login,
+  loginWithGoogle,
   getProfile,
   updateProfile,
   listUsers,
