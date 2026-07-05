@@ -174,19 +174,7 @@ const loginWithGoogle = async (profile) => {
       if (emailVerified) user.emailVerified = true;
       await user.save();
     } else {
-      const isAdminEmail =
-        config.admin.email && normalizedEmail === normalizeEmail(config.admin.email);
-
-      user = await User.create({
-        email: normalizedEmail,
-        googleId,
-        firstName,
-        lastName,
-        authProvider: 'google',
-        emailVerified: emailVerified || false,
-        role: isAdminEmail ? 'admin' : 'user',
-        isVerified: isAdminEmail,
-      });
+      throw new AppError('No account found. Please register your clinic or pharmacy first.', 404);
     }
   }
 

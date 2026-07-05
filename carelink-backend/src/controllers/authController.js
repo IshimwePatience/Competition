@@ -113,10 +113,10 @@ const googleCallback = async (req, res) => {
   try {
     const { code, error } = req.query;
     if (error) {
-      return res.redirect(`${config.clientUrl}/?auth_error=${encodeURIComponent(error)}`);
+      return res.redirect(`${config.clientUrl}/?auth_mode=login&auth_error=${encodeURIComponent(error)}`);
     }
     if (!code) {
-      return res.redirect(`${config.clientUrl}/?auth_error=${encodeURIComponent('Google sign-in was cancelled')}`);
+      return res.redirect(`${config.clientUrl}/?auth_mode=login&auth_error=${encodeURIComponent('Google sign-in was cancelled')}`);
     }
 
     const profile = await googleAuthService.exchangeCodeForProfile(code);
@@ -125,8 +125,8 @@ const googleCallback = async (req, res) => {
     const token = encodeURIComponent(result.token);
     res.redirect(`${config.clientUrl}/dashboard#token=${token}`);
   } catch (err) {
-    const message = err.message || 'Google sign-in failed';
-    res.redirect(`${config.clientUrl}/?auth_error=${encodeURIComponent(message)}`);
+    const message = err.isOperational ? err.message : 'Google sign-in failed';
+    res.redirect(`${config.clientUrl}/?auth_mode=login&auth_error=${encodeURIComponent(message)}`);
   }
 };
 

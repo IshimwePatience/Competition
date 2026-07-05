@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Logo from './Logo';
 
@@ -32,6 +32,10 @@ export default function AuthModal({ mode: initialMode = 'register', accountType:
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(initialError);
+
+  useEffect(() => {
+    if (initialError) setError(initialError);
+  }, [initialError]);
   const [accepted, setAccepted] = useState(false);
   const [form, setForm] = useState({
     firstName: '',
