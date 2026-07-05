@@ -48,6 +48,9 @@ export default function SymptomTriagePage() {
   const [loading, setLoading] = useState(false);
   const [symptomResult, setSymptomResult] = useState(null);
   const [medicineResult, setMedicineResult] = useState(null);
+  const [medicinePrompts, setMedicinePrompts] = useState([]);
+  const [resolvedMedicines, setResolvedMedicines] = useState([]);
+  const [medicineChoices, setMedicineChoices] = useState({});
   const [error, setError] = useState('');
 
   const toggle = (symptom) => {
@@ -81,6 +84,27 @@ export default function SymptomTriagePage() {
     }
   };
 
+  const runMedicineSearch = async (medicines) => {
+    setLoading(true);
+    setMedicineResult(null);
+    try {
+      const res = await api.triageFindMedicines({ medicines });
+      const data = res.data;
+      if (data.status === 'results') {
+        setMedicineResult(data);
+        setMedicinePrompts([]);
+        setResolvedMedicines([]);
+        setMedicineChoices({});
+      } else {
+        setError(data.message || 'Could not search medicines');
+      }
+    } catch (err) {
+      setError(err.message || 'Could not search medicines');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const submitMedicines = async () => {
     if (!medicineText.trim()) {
       setError('Enter the medicine names your doctor or hospital gave you');
@@ -89,9 +113,24 @@ export default function SymptomTriagePage() {
     setError('');
     setLoading(true);
     setMedicineResult(null);
+    setMedicinePrompts([]);
+    setResolvedMedicines([]);
+    setMedicineChoices({});
     try {
       const res = await api.triageFindMedicines({ medicineText: medicineText.trim() });
-      setMedicineResult(res.data);
+      const data = res.data;
+
+      if (data.status === 'confirm') {
+        setMedicinePrompts(data.prompts || []);
+        setResolvedMedicines(data.resolved || []);
+        setMedicineChoices({});
+      } else if (data.status === 'unrecognized') {
+        setError(data.message || 'Please check the medicine spelling and try again');
+      } else if (data.status === 'results') {
+        setMedicineResult(data);
+      } else {
+        setMedicineResult(data);
+      }
     } catch (err) {
       setError(err.message || 'Could not search medicines');
     } finally {
@@ -99,11 +138,38 @@ export default function SymptomTriagePage() {
     }
   };
 
+  const chooseMedicineSuggestion = async (typed, choice) => {
+    const nextChoices = { ...medicineChoices, [typed]: choice };
+    const remaining = medicinePrompts.filter((p) => p.typed !== typed);
+    setMedicineChoices(nextChoices);
+    setMedicinePrompts(remaining);
+    setError('');
+
+    if (remaining.length > 0) return;
+
+    const allMedicines = [
+      ...resolvedMedicines,
+      ...Object.values(nextChoices),
+    ];
+    await runMedicineSearch(allMedicines);
+  };
+
+  const rejectMedicineSuggestion = (typed) => {
+    setMedicinePrompts([]);
+    setResolvedMedicines([]);
+    setMedicineChoices({});
+    setMedicineResult(null);
+    setError(`We couldn't find a match for "${typed}". Please check the spelling and enter the correct medicine name.`);
+  };
+
   const switchTab = (next) => {
     setTab(next);
     setError('');
     setSymptomResult(null);
     setMedicineResult(null);
+    setMedicinePrompts([]);
+    setResolvedMedicines([]);
+    setMedicineChoices({});
   };
 
   if (authLoading) {
@@ -227,7 +293,13 @@ export default function SymptomTriagePage() {
               </p>
               <textarea
                 value={medicineText}
-                onChange={(e) => setMedicineText(e.target.value)}
+                onChange={(e) => {
+                  setMedicineText(e.target.value);
+                  setMedicinePrompts([]);
+                  setResolvedMedicines([]);
+                  setMedicineChoices({});
+                  setMedicineResult(null);
+                }}
                 rows={4}
                 placeholder="e.g. Paracetamol, Amoxicillin, Ibuprofen"
                 className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-brand-orange focus:outline-none focus:ring-1 focus:ring-brand-orange"
@@ -253,6 +325,43 @@ export default function SymptomTriagePage() {
             </button>
           </div>
         </div>
+
+        {tab === TAB_MEDICINES && medicinePrompts.length > 0 && (
+          <div className="mt-4 space-y-3">
+            {medicinePrompts.map((prompt) => (
+              <div
+                key={prompt.typed}
+                className="rounded-2xl border border-gray-200 bg-gray-50 px-5 py-4"
+              >
+                <p className="text-sm text-gray-700">
+                  You typed <span className="font-semibold text-gray-900">&quot;{prompt.typed}&quot;</span>
+                </p>
+                <p className="mt-1 text-sm text-gray-500">Did you mean one of these?</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {prompt.suggestions.map((name) => (
+                    <button
+                      key={name}
+                      type="button"
+                      disabled={loading}
+                      onClick={() => chooseMedicineSuggestion(prompt.typed, name)}
+                      className="rounded-full border border-brand-orange bg-white px-4 py-2 text-sm font-medium text-gray-800 shadow-sm transition hover:bg-orange-50 disabled:opacity-50"
+                    >
+                      {name}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    disabled={loading}
+                    onClick={() => rejectMedicineSuggestion(prompt.typed)}
+                    className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm text-gray-500 transition hover:bg-gray-100 disabled:opacity-50"
+                  >
+                    None of these
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {tab === TAB_SYMPTOMS && symptomResult && (
           <div className="mt-6 space-y-4 rounded-2xl border border-gray-100 p-5">
@@ -290,7 +399,7 @@ export default function SymptomTriagePage() {
           </div>
         )}
 
-        {tab === TAB_MEDICINES && medicineResult && (
+        {tab === TAB_MEDICINES && medicineResult?.status === 'results' && (
           <div className="mt-6 space-y-4 rounded-2xl border border-gray-100 p-5">
             <p className="text-sm text-gray-700">{medicineResult.message}</p>
             {medicineResult.medicines?.length > 0 && (
@@ -311,7 +420,7 @@ export default function SymptomTriagePage() {
               </div>
             ) : (
               <p className="text-sm text-gray-500">
-                No facilities currently list these medicines. Try a different spelling or call ahead.
+                No facilities currently list these medicines. Please check the medicine name and try again.
               </p>
             )}
           </div>
