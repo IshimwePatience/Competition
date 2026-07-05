@@ -92,7 +92,7 @@ export default function FacilityStockPage({ onCountChange }) {
   return (
     <div>
       {msg && <p className="mb-4 text-[12px] text-gray-500">{msg}</p>}
-      <TablePanel title="Medicine Stock" subtitle="List all medicines you carry — patients rely on this data" count={stock.length}>
+      <TablePanel subtitle="List all medicines you carry — patients rely on this data" count={stock.length}>
         <div className="mb-4 grid gap-3 sm:grid-cols-4">
           <input
             list="medicine-suggestions"

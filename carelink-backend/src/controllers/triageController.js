@@ -32,4 +32,13 @@ const history = async (req, res, next) => {
   }
 };
 
-module.exports = { analyze, analyzePublic, symptomList, history };
+const findMedicines = async (req, res, next) => {
+  try {
+    const result = await triageService.findPublicMedicines(req.body);
+    res.json({ success: true, data: result });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { analyze, analyzePublic, findMedicines, symptomList, history };
