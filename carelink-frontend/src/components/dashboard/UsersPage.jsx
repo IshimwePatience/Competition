@@ -7,6 +7,7 @@ const ROLE_LABELS = {
   admin: 'Admin',
   health_worker: 'Health Worker',
   user: 'User',
+  facility: 'Facility',
 };
 
 function UserAvatar({ user }) {

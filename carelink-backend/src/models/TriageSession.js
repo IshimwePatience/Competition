@@ -11,7 +11,7 @@ module.exports = (sequelize) => {
       },
       userId: {
         type: DataTypes.UUID,
-        allowNull: false,
+        allowNull: true,
       },
       symptoms: {
         type: DataTypes.TEXT,
@@ -28,6 +28,10 @@ module.exports = (sequelize) => {
       reason: {
         type: DataTypes.TEXT,
         allowNull: false,
+      },
+      likelyMedicineCategory: {
+        type: DataTypes.STRING,
+        allowNull: true,
       },
       aiRawResponse: DataTypes.JSONB,
     },

@@ -62,6 +62,7 @@ export default function Landing() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [authMode, setAuthMode] = useState(null);
+  const [authAccountType, setAuthAccountType] = useState('user');
   const [authError, setAuthError] = useState('');
   const [activeSection, setActiveSection] = useState('pharmacy');
 
@@ -115,7 +116,7 @@ export default function Landing() {
 
           <button
             type="button"
-            onClick={() => setAuthMode('register')}
+            onClick={() => navigate('/symptoms')}
             className="hidden rounded-full bg-brand-orange px-4 py-2 text-sm font-semibold text-white sm:block"
           >
             Free Triage
@@ -319,11 +320,13 @@ export default function Landing() {
 
       {authMode && (
         <AuthModal
-          key={authMode}
+          key={`${authMode}-${authAccountType}`}
           mode={authMode}
+          accountType={authAccountType}
           initialError={authError}
           onClose={() => {
             setAuthMode(null);
+            setAuthAccountType('user');
             setAuthError('');
           }}
           onSuccess={() => {

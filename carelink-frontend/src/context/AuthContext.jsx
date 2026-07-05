@@ -32,7 +32,9 @@ export function AuthProvider({ children }) {
   };
 
   const register = async (data) => {
-    const res = await api.register(data);
+    const res = data.accountType === 'facility'
+      ? await api.registerFacility(data)
+      : await api.register(data);
     setUser(res.data.user);
     return res.data.user;
   };

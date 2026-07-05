@@ -55,9 +55,41 @@ const creditActionRules = [
 
 const uuidParam = (name) => param(name).isUUID().withMessage(`Valid ${name} required`);
 
+const facilityRegisterRules = [
+  body('email').isEmail().withMessage('Valid email required'),
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  body('firstName').trim().notEmpty().withMessage('Contact first name required'),
+  body('lastName').trim().notEmpty().withMessage('Contact last name required'),
+  body('facilityName').trim().notEmpty().withMessage('Facility name required'),
+  body('facilityType').isIn(['clinic', 'pharmacy']).withMessage('Facility type must be clinic or pharmacy'),
+  body('address').trim().notEmpty().withMessage('Address required'),
+  body('phone').optional().isString(),
+  body('latitude').isFloat({ min: -90, max: 90 }).withMessage('Valid latitude required'),
+  body('longitude').isFloat({ min: -180, max: 180 }).withMessage('Valid longitude required'),
+  body('openingHours').optional().isString(),
+];
+
+const publicTriageRules = [
+  body('symptoms').isArray({ min: 1 }).withMessage('Select at least one symptom'),
+  body('symptoms.*').trim().notEmpty(),
+  body('latitude').optional().isFloat({ min: -90, max: 90 }),
+  body('longitude').optional().isFloat({ min: -180, max: 180 }),
+];
+
+const stockRules = [
+  body('medicineStock').isArray().withMessage('Medicine stock must be an array'),
+  body('medicineStock.*.name').trim().notEmpty(),
+  body('medicineStock.*.quantity').optional().isInt({ min: 0 }),
+  body('medicineStock.*.status').optional().isIn(['in_stock', 'low_stock', 'out_of_stock']),
+  body('medicineStock.*.category').optional().isString(),
+];
+
 module.exports = {
   registerRules,
   loginRules,
+  facilityRegisterRules,
+  publicTriageRules,
+  stockRules,
   triageRules,
   facilityCreateRules,
   reportRules,

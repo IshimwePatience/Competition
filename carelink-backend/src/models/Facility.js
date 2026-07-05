@@ -62,6 +62,10 @@ module.exports = (sequelize) => {
         type: DataTypes.FLOAT,
         defaultValue: 1.0,
       },
+      ownerId: {
+        type: DataTypes.UUID,
+        allowNull: true,
+      },
     },
     { tableName: 'facilities' }
   );

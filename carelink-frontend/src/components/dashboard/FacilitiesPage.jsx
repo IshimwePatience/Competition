@@ -2,6 +2,7 @@ import RoleGuard from '../RoleGuard';
 import AdminWidgets from './AdminWidgets';
 import UserFacilities from './UserFacilities';
 import WorkerFacilities from './WorkerFacilities';
+import FacilityOwnerPage from './FacilityOwnerPage';
 
 export default function FacilitiesPage({ onReport }) {
   return (
@@ -16,6 +17,10 @@ export default function FacilitiesPage({ onReport }) {
 
       <RoleGuard roles={['user']}>
         <UserFacilities onReport={onReport} />
+      </RoleGuard>
+
+      <RoleGuard roles={['facility']}>
+        <FacilityOwnerPage />
       </RoleGuard>
     </div>
   );

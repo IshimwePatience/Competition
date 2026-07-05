@@ -4,6 +4,7 @@ import { NotificationProvider } from './context/NotificationContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Landing from './pages/Landing';
 import Dashboard from './pages/Dashboard';
+import SymptomTriagePage from './pages/SymptomTriagePage';
 
 export default function App() {
   return (
@@ -12,6 +13,7 @@ export default function App() {
         <NotificationProvider>
           <Routes>
             <Route path="/" element={<Landing />} />
+            <Route path="/symptoms" element={<SymptomTriagePage />} />
             <Route
               path="/dashboard"
               element={

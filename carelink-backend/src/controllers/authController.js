@@ -23,6 +23,16 @@ const register = async (req, res, next) => {
   }
 };
 
+const registerFacility = async (req, res, next) => {
+  try {
+    const result = await authService.registerFacility(req.body);
+    setTokenCookie(res, result.token);
+    res.status(201).json({ success: true, data: { user: result.user } });
+  } catch (err) {
+    next(err);
+  }
+};
+
 const login = async (req, res, next) => {
   try {
     const result = await authService.login(req.body);
@@ -113,6 +123,7 @@ const googleCallback = async (req, res) => {
 
 module.exports = {
   register,
+  registerFacility,
   login,
   logout,
   getProfile,
