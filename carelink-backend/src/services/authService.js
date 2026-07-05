@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const config = require('../config');
-const { User, sequelize } = require('../models');
+const { User, Facility, sequelize } = require('../models');
 const AppError = require('../utils/AppError');
 const { normalizeEmail, emailWhere } = require('../utils/email');
 
@@ -27,6 +27,65 @@ const register = async ({ email, password, firstName, lastName, latitude, longit
     latitude,
     longitude,
     role: 'user',
+  });
+
+  const token = generateToken(user);
+  return { user, token };
+};
+
+const registerFacility = async ({
+  email,
+  password,
+  firstName,
+  lastName,
+  facilityName,
+  facilityType,
+  address,
+  phone,
+  latitude,
+  longitude,
+  openingHours,
+}) => {
+  if (!['clinic', 'pharmacy'].includes(facilityType)) {
+    throw new AppError('Facility type must be clinic or pharmacy', 400);
+  }
+
+  const normalizedEmail = normalizeEmail(email);
+  const existing = await findByEmail(normalizedEmail);
+  if (existing) throw new AppError('Email already registered', 409);
+
+  const lat = parseFloat(latitude);
+  const lng = parseFloat(longitude);
+  if (Number.isNaN(lat) || Number.isNaN(lng)) {
+    throw new AppError('Valid facility location coordinates are required', 400);
+  }
+
+  const user = await sequelize.transaction(async (t) => {
+    const createdUser = await User.create({
+      email: normalizedEmail,
+      password,
+      firstName,
+      lastName,
+      latitude: lat,
+      longitude: lng,
+      role: 'facility',
+      isVerified: true,
+    }, { transaction: t });
+
+    await Facility.create({
+      name: facilityName.trim(),
+      type: facilityType,
+      address: address.trim(),
+      phone: phone?.trim() || null,
+      latitude: lat,
+      longitude: lng,
+      openingHours: openingHours?.trim() || 'Mon-Fri 8:00-17:00',
+      ownerId: createdUser.id,
+      medicineStock: [],
+      isOpen: true,
+    }, { transaction: t });
+
+    return createdUser;
   });
 
   const token = generateToken(user);
@@ -151,6 +210,7 @@ const loginWithGoogle = async (profile) => {
 
 module.exports = {
   register,
+  registerFacility,
   login,
   loginWithGoogle,
   getProfile,

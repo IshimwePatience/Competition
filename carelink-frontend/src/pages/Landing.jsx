@@ -3,6 +3,7 @@ import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Logo from '../components/Logo';
 import AuthModal from '../components/AuthModal';
+import PublicNavbar from '../components/layout/PublicNavbar';
 
 const img = (id, w, h) =>
   `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${w}&h=${h || w}&q=80`;
@@ -62,6 +63,7 @@ export default function Landing() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [authMode, setAuthMode] = useState(null);
+  const [authAccountType, setAuthAccountType] = useState('user');
   const [authError, setAuthError] = useState('');
   const [activeSection, setActiveSection] = useState('pharmacy');
 
@@ -73,6 +75,14 @@ export default function Landing() {
       setSearchParams({}, { replace: true });
     }
   }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
+    const hash = window.location.hash?.slice(1);
+    if (hash && CATEGORIES.some((c) => c.id === hash)) {
+      const t = setTimeout(() => scrollToSection(hash), 100);
+      return () => clearTimeout(t);
+    }
+  }, []);
 
   useEffect(() => {
     const sections = CATEGORIES.map((c) => document.getElementById(c.id)).filter(Boolean);
@@ -109,50 +119,11 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-white font-sans text-gray-900">
       {/* ── HEADER (remove.bg style: Log in + Sign up pill) ── */}
-      <header className="sticky top-0 z-40 border-b border-gray-100 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3 sm:px-6">
-          <Logo size="md" />
-
-          <button
-            type="button"
-            onClick={() => setAuthMode('register')}
-            className="hidden rounded-full bg-brand-orange px-4 py-2 text-sm font-semibold text-white sm:block"
-          >
-            Free Triage
-          </button>
-
-          <div className="ml-auto flex items-center gap-3">
-            <button type="button" onClick={() => setAuthMode('login')} className="text-sm font-medium text-gray-600 hover:text-gray-900">
-              Log in
-            </button>
-            <button
-              type="button"
-              onClick={() => setAuthMode('register')}
-              className="rounded-full bg-gray-100 px-5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
-            >
-              Sign up
-            </button>
-          </div>
-        </div>
-
-        {/* Category nav — Petsmart row */}
-        <div className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 pb-3 sm:px-6">
-          {CATEGORIES.map(({ id, label }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => scrollToSection(id)}
-              className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition ${
-                activeSection === id
-                  ? 'bg-brand-orange text-white shadow-sm'
-                  : 'text-gray-600 hover:bg-orange-50 hover:text-brand-orange'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </header>
+      <PublicNavbar
+        activeSection={activeSection}
+        onLogin={() => setAuthMode('login')}
+        onSignUp={() => setAuthMode('register')}
+      />
 
       <main>
         {/* ── HERO — Petsmart split banner ── */}
@@ -319,11 +290,13 @@ export default function Landing() {
 
       {authMode && (
         <AuthModal
-          key={authMode}
+          key={`${authMode}-${authAccountType}`}
           mode={authMode}
+          accountType={authAccountType}
           initialError={authError}
           onClose={() => {
             setAuthMode(null);
+            setAuthAccountType('user');
             setAuthError('');
           }}
           onSuccess={() => {

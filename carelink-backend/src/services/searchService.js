@@ -8,6 +8,20 @@ const search = async (query, { limit = 10 } = {}) => {
 
   const safeLimit = Math.min(parseInt(limit, 10) || 10, 25);
 
+  let medicineMatches = [];
+  try {
+    medicineMatches = await sequelize.query(
+      `SELECT id, name, type, address, latitude, longitude, "isOpen", "medicineStock"
+       FROM facilities
+       WHERE "medicineStock"::text ILIKE :pattern
+       ORDER BY "trustScore" DESC
+       LIMIT :limit`,
+      { replacements: { pattern: `%${q}%`, limit: safeLimit }, type: QueryTypes.SELECT }
+    );
+  } catch {
+    medicineMatches = [];
+  }
+
   const facilities = await sequelize.query(
     `SELECT id, name, type, address, latitude, longitude, "isOpen", "waitTimeMinutes", "crowdLevel"
      FROM facilities
@@ -34,7 +48,7 @@ const search = async (query, { limit = 10 } = {}) => {
     reports = [];
   }
 
-  return { facilities, reports, query: q };
+  return { facilities, medicineMatches, reports, query: q };
 };
 
 module.exports = { search };

@@ -21,7 +21,7 @@ export default function SearchBar() {
         setResults(res.data);
         setOpen(true);
       } catch {
-        setResults({ facilities: [], reports: [] });
+        setResults({ facilities: [], medicineMatches: [], reports: [] });
       } finally {
         setLoading(false);
       }
@@ -48,7 +48,7 @@ export default function SearchBar() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => query.length >= 2 && setOpen(true)}
-          placeholder="Search facilities, services..."
+          placeholder="Search facilities, medicines..."
           className="ml-2 w-full border-0 bg-transparent text-sm focus:ring-0"
         />
         {loading && <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand-orange border-t-transparent" />}
@@ -67,6 +67,17 @@ export default function SearchBar() {
               ))}
             </div>
           )}
+          {results.medicineMatches?.length > 0 && (
+            <div className="border-t border-gray-100 p-2">
+              <p className="px-2 py-1 text-xs font-semibold uppercase text-gray-400">Medicine in stock</p>
+              {results.medicineMatches.map((f) => (
+                <div key={`med-${f.id}`} className="rounded-lg px-3 py-2 hover:bg-gray-50">
+                  <p className="text-sm font-medium">{f.name}</p>
+                  <p className="text-xs text-gray-500">{f.type} · {f.address}</p>
+                </div>
+              ))}
+            </div>
+          )}
           {results.reports?.length > 0 && (
             <div className="border-t border-gray-100 p-2">
               <p className="px-2 py-1 text-xs font-semibold uppercase text-gray-400">Reports</p>
@@ -78,7 +89,7 @@ export default function SearchBar() {
               ))}
             </div>
           )}
-          {!results.facilities?.length && !results.reports?.length && (
+          {!results.facilities?.length && !results.medicineMatches?.length && !results.reports?.length && (
             <EmptyState message="No results found" compact />
           )}
         </div>

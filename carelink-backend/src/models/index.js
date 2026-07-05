@@ -25,6 +25,8 @@ User.hasMany(HealthCredit, { foreignKey: 'userId', as: 'credits' });
 User.hasMany(Notification, { foreignKey: 'userId', as: 'notifications' });
 
 // Facility associations
+Facility.belongsTo(User, { foreignKey: 'ownerId', as: 'owner' });
+User.hasOne(Facility, { foreignKey: 'ownerId', as: 'ownedFacility' });
 Facility.hasMany(FacilityReport, { foreignKey: 'facilityId', as: 'reports' });
 FacilityReport.belongsTo(Facility, { foreignKey: 'facilityId', as: 'facility' });
 FacilityReport.belongsTo(User, { foreignKey: 'userId', as: 'reporter' });

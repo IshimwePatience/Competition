@@ -24,8 +24,9 @@ function EyeIcon({ off }) {
   );
 }
 
-export default function AuthModal({ mode: initialMode = 'register', onClose, onSuccess, initialError = '' }) {
+export default function AuthModal({ mode: initialMode = 'register', accountType: initialAccountType = 'user', onClose, onSuccess, initialError = '' }) {
   const [mode, setMode] = useState(initialMode);
+  const [accountType, setAccountType] = useState(initialAccountType);
   const [step, setStep] = useState(1);
   const { login, register } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
@@ -37,6 +38,13 @@ export default function AuthModal({ mode: initialMode = 'register', onClose, onS
     lastName: '',
     email: '',
     password: '',
+    facilityName: '',
+    facilityType: 'clinic',
+    address: '',
+    phone: '',
+    latitude: '',
+    longitude: '',
+    openingHours: 'Mon-Fri 8:00-17:00',
   });
   const [fieldErrors, setFieldErrors] = useState({});
 
@@ -49,6 +57,7 @@ export default function AuthModal({ mode: initialMode = 'register', onClose, onS
 
   const switchMode = (nextMode) => {
     setMode(nextMode);
+    if (nextMode === 'login') setAccountType('user');
     resetForm();
   };
 
@@ -65,7 +74,20 @@ export default function AuthModal({ mode: initialMode = 'register', onClose, onS
     return Object.keys(errs).length === 0;
   };
 
-  const validateStep2 = () => {
+  const isFacility = accountType === 'facility';
+  const totalSteps = isFacility ? 3 : 2;
+  const credentialStep = isFacility ? 3 : 2;
+
+  const validateFacilityStep = () => {
+    const errs = {};
+    if (!form.facilityName.trim()) errs.facilityName = 'Facility name required';
+    if (!form.address.trim()) errs.address = 'Address required';
+    if (!form.latitude || !form.longitude) errs.location = 'Use location or enter coordinates';
+    setFieldErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const validateCredentials = () => {
     const errs = {};
     if (!form.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errs.email = 'Valid email required';
     if (!form.password || form.password.length < 6) errs.password = 'Password must be at least 6 characters';
@@ -85,22 +107,53 @@ export default function AuthModal({ mode: initialMode = 'register', onClose, onS
   const handleNext = (e) => {
     e.preventDefault();
     setError('');
-    if (validateStep1()) setStep(2);
+    if (step === 1 && validateStep1()) {
+      setStep(2);
+      return;
+    }
+    if (step === 2 && isFacility && validateFacilityStep()) {
+      setStep(3);
+    }
+  };
+
+  const useMyLocation = () => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setForm((f) => ({
+        ...f,
+        latitude: String(pos.coords.latitude),
+        longitude: String(pos.coords.longitude),
+      })),
+      () => setError('Could not get your location')
+    );
   };
 
   const handleRegister = async (e) => {
     e.preventDefault();
     setError('');
-    if (!validateStep2()) return;
+    if (!validateCredentials()) return;
 
     setLoading(true);
     try {
-      await register({
+      const payload = {
         firstName: form.firstName,
         lastName: form.lastName,
         email: form.email,
         password: form.password,
-      });
+      };
+      if (isFacility) {
+        Object.assign(payload, {
+          accountType: 'facility',
+          facilityName: form.facilityName,
+          facilityType: form.facilityType,
+          address: form.address,
+          phone: form.phone,
+          latitude: parseFloat(form.latitude),
+          longitude: parseFloat(form.longitude),
+          openingHours: form.openingHours,
+        });
+      }
+      await register(payload);
       onSuccess?.();
     } catch (err) {
       setError(err.message || 'Something went wrong');
@@ -147,16 +200,18 @@ export default function AuthModal({ mode: initialMode = 'register', onClose, onS
         </div>
 
         <h2 className="mb-2 text-center text-xl font-bold text-gray-900">
-          {mode === 'register' ? 'Get started with CareLink' : 'Welcome back'}
+          {mode === 'register'
+            ? (isFacility ? 'Register your facility' : 'Get started with CareLink')
+            : 'Welcome back'}
         </h2>
 
         {mode === 'register' && (
           <p className="mb-6 text-center text-xs text-gray-400">
-            Step {step} of 2
+            Step {step} of {totalSteps}
           </p>
         )}
 
-        {mode === 'register' && step === 1 && (
+        {mode === 'register' && step === 1 && !isFacility && (
           <button
             type="button"
             onClick={handleGoogleLogin}
@@ -205,7 +260,29 @@ export default function AuthModal({ mode: initialMode = 'register', onClose, onS
         )}
 
         {/* ── REGISTER STEP 2: email + password stacked vertically ── */}
-        {mode === 'register' && step === 2 && (
+        {mode === 'register' && step === 2 && isFacility && (
+          <form onSubmit={handleNext} className="space-y-3">
+            <input type="text" placeholder="Facility name" value={form.facilityName} onChange={(e) => setForm({ ...form, facilityName: e.target.value })} className={inputClass('facilityName')} />
+            {fieldErrors.facilityName && <p className="text-xs text-red-500">{fieldErrors.facilityName}</p>}
+            <select value={form.facilityType} onChange={(e) => setForm({ ...form, facilityType: e.target.value })} className={inputClass('facilityType')}>
+              <option value="clinic">Clinic</option>
+              <option value="pharmacy">Pharmacy</option>
+            </select>
+            <input type="text" placeholder="Address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className={inputClass('address')} />
+            {fieldErrors.address && <p className="text-xs text-red-500">{fieldErrors.address}</p>}
+            <input type="text" placeholder="Phone (optional)" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputClass('phone')} />
+            <button type="button" onClick={useMyLocation} className="w-full rounded-xl border border-gray-200 py-3 text-sm text-gray-600 hover:bg-gray-50">
+              Use my location
+            </button>
+            {fieldErrors.location && <p className="text-xs text-red-500">{fieldErrors.location}</p>}
+            <div className="mt-2 flex gap-3">
+              <button type="button" onClick={() => { setStep(1); setFieldErrors({}); }} className="w-1/3 rounded-xl border border-gray-200 py-3.5 text-sm font-medium text-gray-600 hover:bg-gray-50">Back</button>
+              <button type="submit" className="flex-1 rounded-xl bg-brand-peach py-3.5 text-sm font-semibold text-white transition hover:bg-brand-peachHover">Next</button>
+            </div>
+          </form>
+        )}
+
+        {mode === 'register' && step === credentialStep && (
           <form onSubmit={handleRegister} className="space-y-3">
             <div>
               <input
@@ -252,7 +329,7 @@ export default function AuthModal({ mode: initialMode = 'register', onClose, onS
             <div className="mt-2 flex gap-3">
               <button
                 type="button"
-                onClick={() => { setStep(1); setFieldErrors({}); }}
+                onClick={() => { setStep(isFacility ? 2 : 1); setFieldErrors({}); }}
                 className="w-1/3 rounded-xl border border-gray-200 py-3.5 text-sm font-medium text-gray-600 hover:bg-gray-50"
               >
                 Back
@@ -350,6 +427,26 @@ export default function AuthModal({ mode: initialMode = 'register', onClose, onS
             </>
           )}
         </p>
+
+        {mode === 'register' && (
+          <p className="mt-2 text-center text-xs text-gray-400">
+            {isFacility ? (
+              <>
+                Individual account?{' '}
+                <button type="button" onClick={() => { setAccountType('user'); resetForm(); }} className="text-brand-orange hover:underline">
+                  Register as user
+                </button>
+              </>
+            ) : (
+              <>
+                Clinic or pharmacy?{' '}
+                <button type="button" onClick={() => { setAccountType('facility'); resetForm(); }} className="text-brand-orange hover:underline">
+                  Register your facility
+                </button>
+              </>
+            )}
+          </p>
+        )}
       </div>
     </div>
   );

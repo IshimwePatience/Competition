@@ -3,11 +3,12 @@ const authController = require('../controllers/authController');
 const { authenticate, authorize } = require('../middleware/auth');
 const validate = require('../middleware/validate');
 const { authLimiter } = require('../middleware/rateLimiter');
-const { registerRules, loginRules, uuidParam } = require('../middleware/validators');
+const { registerRules, loginRules, uuidParam, facilityRegisterRules } = require('../middleware/validators');
 
 const router = express.Router();
 
 router.post('/register', authLimiter, registerRules, validate, authController.register);
+router.post('/register/facility', authLimiter, facilityRegisterRules, validate, authController.registerFacility);
 router.post('/login', authLimiter, loginRules, validate, authController.login);
 router.post('/logout', authController.logout);
 router.get('/google', authController.googleRedirect);

@@ -30,8 +30,14 @@ export default function Dashboard() {
   const meta = PAGE_META[activeTab];
 
   useEffect(() => {
-    api.creditBalance().then((r) => setCredits(r.data.balance)).catch(() => {});
-  }, []);
+    if (role === 'facility') setActiveTab('facilities');
+  }, [role]);
+
+  useEffect(() => {
+    if (role !== 'facility') {
+      api.creditBalance().then((r) => setCredits(r.data.balance)).catch(() => {});
+    }
+  }, [role]);
 
   const runTriage = async () => {
     if (!symptoms.trim()) return;
