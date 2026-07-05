@@ -32,11 +32,9 @@ export const api = {
   login: (body) => request('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
   logout: () => request('/auth/logout', { method: 'POST' }),
   me: () => request('/auth/me'),
-  triageAnalyze: (symptoms) => request('/triage/analyze', { method: 'POST', body: JSON.stringify({ symptoms }) }),
   triagePublic: (body) => request('/triage/public', { method: 'POST', body: JSON.stringify(body) }),
   triageFindMedicines: (body) => request('/triage/find-medicines', { method: 'POST', body: JSON.stringify(body) }),
   triageSymptoms: () => request('/triage/symptoms'),
-  triageHistory: () => request('/triage/history'),
   facilities: (params = {}) => {
     const q = new URLSearchParams(params).toString();
     return request(`/facilities${q ? `?${q}` : ''}`);
@@ -71,6 +69,8 @@ export const api = {
   },
   markNotificationRead: (id) => request(`/notifications/${id}/read`, { method: 'PATCH' }),
   analytics: () => request('/analytics/dashboard'),
+  adminAiSnapshot: () => request('/analytics/admin-ai/snapshot'),
+  adminAiQuery: (question) => request('/analytics/admin-ai/query', { method: 'POST', body: JSON.stringify({ question }) }),
   users: (params = {}) => {
     const q = new URLSearchParams(params).toString();
     return request(`/auth/users${q ? `?${q}` : ''}`);

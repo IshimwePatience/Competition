@@ -4,12 +4,9 @@ const config = require('../config/database');
 const env = process.env.NODE_ENV || 'development';
 const dbConfig = config[env];
 
-const sequelize = new Sequelize(
-  dbConfig.database,
-  dbConfig.username,
-  dbConfig.password,
-  dbConfig
-);
+const sequelize = dbConfig.url
+  ? new Sequelize(dbConfig.url, dbConfig)
+  : new Sequelize(dbConfig.database, dbConfig.username, dbConfig.password, dbConfig);
 
 const User = require('./User')(sequelize);
 const Facility = require('./Facility')(sequelize);
@@ -17,6 +14,7 @@ const FacilityReport = require('./FacilityReport')(sequelize);
 const TriageSession = require('./TriageSession')(sequelize);
 const HealthCredit = require('./HealthCredit')(sequelize);
 const Notification = require('./Notification')(sequelize);
+const PublicUsageLog = require('./PublicUsageLog')(sequelize);
 
 // User associations
 User.hasMany(FacilityReport, { foreignKey: 'userId', as: 'reports' });
@@ -45,4 +43,5 @@ module.exports = {
   TriageSession,
   HealthCredit,
   Notification,
+  PublicUsageLog,
 };

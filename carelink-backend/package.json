@@ -7,6 +7,7 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "db:migrate": "node src/scripts/migrate.js",
+    "db:migrate-supabase": "node src/scripts/migrate-to-supabase.js",
     "db:reset": "node src/scripts/reset.js"
   },
   "keywords": [

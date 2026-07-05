@@ -1,8 +1,9 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const config = require('../config');
-const { TriageSession } = require('../models');
+const { Facility } = require('../models');
 const AppError = require('../utils/AppError');
 const facilityOwnerService = require('./facilityOwnerService');
+const { logPublicUsage } = require('./publicUsageService');
 const { COMMON_MEDICINES } = require('../constants/medicines');
 
 const MEDICINE_NORMALIZE_PROMPT = `You help match medicine names patients were told to find at a pharmacy.
@@ -125,33 +126,6 @@ const runTriageAI = async (symptomsText) => {
   return { result, aiRawResponse, usedFallback };
 };
 
-const analyzeSymptoms = async (userId, symptoms) => {
-  if (!symptoms?.trim()) throw new AppError('Symptoms description is required', 400);
-
-  const { result, aiRawResponse, usedFallback } = await runTriageAI(symptoms);
-
-  const session = await TriageSession.create({
-    userId,
-    symptoms,
-    urgency: result.urgency,
-    recommendedFacility: result.recommendedFacility,
-    likelyMedicineCategory: result.likelyMedicineCategory,
-    reason: result.reason,
-    aiRawResponse: { ...aiRawResponse, usedFallback },
-  });
-
-  const { emitToUser } = require('./socketService');
-  emitToUser(userId, 'triage:complete', {
-    sessionId: session.id,
-    urgency: result.urgency,
-    recommendedFacility: result.recommendedFacility,
-    likelyMedicineCategory: result.likelyMedicineCategory,
-    reason: result.reason,
-  });
-
-  return session;
-};
-
 const analyzePublicSymptoms = async ({ symptoms, latitude, longitude }) => {
   const list = Array.isArray(symptoms) ? symptoms : [symptoms];
   const cleaned = list.map((s) => String(s).trim()).filter(Boolean);
@@ -179,6 +153,13 @@ const analyzePublicSymptoms = async ({ symptoms, latitude, longitude }) => {
     });
   }
 
+  await logPublicUsage('symptoms', {
+    symptoms: cleaned,
+    urgency: result.urgency,
+    recommendedFacility: result.recommendedFacility,
+    likelyMedicineCategory: result.likelyMedicineCategory,
+  });
+
   return {
     symptoms: cleaned,
     urgency: result.urgency,
@@ -202,6 +183,121 @@ const fallbackNormalizeMedicines = (parts) =>
     );
     return known ? known.name : part;
   });
+
+const splitMedicineText = (raw) =>
+  String(raw || '')
+    .split(/[,\n;]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+const levenshtein = (a, b) => {
+  const m = a.length;
+  const n = b.length;
+  const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i += 1) dp[i][0] = i;
+  for (let j = 0; j <= n; j += 1) dp[0][j] = j;
+  for (let i = 1; i <= m; i += 1) {
+    for (let j = 1; j <= n; j += 1) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+    }
+  }
+  return dp[m][n];
+};
+
+let medicineCatalogCache = null;
+let medicineCatalogCacheAt = 0;
+
+const getMedicineCatalog = async () => {
+  const now = Date.now();
+  if (medicineCatalogCache && now - medicineCatalogCacheAt < 60_000) {
+    return medicineCatalogCache;
+  }
+  const facilities = await Facility.findAll({ attributes: ['medicineStock'] });
+  const names = new Set(COMMON_MEDICINES.map((m) => m.name));
+  facilities.forEach((f) => {
+    (f.medicineStock || []).forEach((item) => {
+      if (item?.name) names.add(String(item.name).trim());
+    });
+  });
+  medicineCatalogCache = [...names].filter(Boolean);
+  medicineCatalogCacheAt = now;
+  return medicineCatalogCache;
+};
+
+const findCatalogMatch = (term, catalog) => {
+  const lower = term.toLowerCase();
+  return catalog.find((name) => name.toLowerCase() === lower) || null;
+};
+
+const findSuggestions = (term, catalog) => {
+  const lower = term.toLowerCase();
+  const scored = catalog
+    .map((name) => {
+      const nameLower = name.toLowerCase();
+      const dist = levenshtein(lower, nameLower);
+      const prefixBonus = nameLower.startsWith(lower.slice(0, 3)) || lower.startsWith(nameLower.slice(0, 3)) ? -1 : 0;
+      return { name, score: dist + prefixBonus };
+    })
+    .filter((x) => x.score <= 3)
+    .sort((a, b) => a.score - b.score);
+
+  const unique = [];
+  scored.forEach((x) => {
+    if (!unique.some((u) => u.toLowerCase() === x.name.toLowerCase())) unique.push(x.name);
+  });
+  return unique.slice(0, 4);
+};
+
+const resolveMedicineInputs = async (parts) => {
+  const catalog = await getMedicineCatalog();
+  const resolved = [];
+  const prompts = [];
+  const unrecognized = [];
+
+  for (const part of parts) {
+    const exact = findCatalogMatch(part, catalog);
+    if (exact) {
+      resolved.push(exact);
+      continue;
+    }
+
+    let suggestions = findSuggestions(part, catalog);
+    try {
+      const normalized = await normalizeMedicineNames(part);
+      const aiName = normalized.medicines?.[0];
+      if (aiName && aiName.toLowerCase() !== part.toLowerCase()) {
+        suggestions = [...new Set([aiName, ...suggestions])].slice(0, 4);
+      } else if (aiName && findCatalogMatch(aiName, catalog)) {
+        suggestions = [...new Set([aiName, ...suggestions])].slice(0, 4);
+      }
+    } catch {
+      // keep fuzzy suggestions only
+    }
+
+    if (suggestions.length > 0) {
+      prompts.push({ typed: part, suggestions });
+    } else {
+      unrecognized.push(part);
+    }
+  }
+
+  return { resolved, prompts, unrecognized };
+};
+
+const searchMedicineResults = async (names) => {
+  const { facilities } = await facilityOwnerService.findFacilitiesWithMedicines(names);
+  await logPublicUsage('medicine_search', { medicines: names, matchCount: facilities.length });
+
+  return {
+    status: 'results',
+    medicines: names,
+    facilities,
+    message: facilities.length > 0
+      ? `Found ${facilities.length} facilit${facilities.length === 1 ? 'y' : 'ies'} with your medicine${names.length > 1 ? 's' : ''} in stock`
+      : 'No facilities currently list these medicines in stock. Please check the medicine name and try again.',
+  };
+};
 
 const normalizeMedicineNames = async (raw) => {
   const parts = String(raw || '')
@@ -238,35 +334,35 @@ const normalizeMedicineNames = async (raw) => {
 };
 
 const findPublicMedicines = async ({ medicines, medicineText }) => {
-  let names = [];
   if (Array.isArray(medicines) && medicines.length > 0) {
-    names = medicines.map((m) => String(m).trim()).filter(Boolean);
-  } else if (medicineText) {
-    const normalized = await normalizeMedicineNames(medicineText);
-    names = normalized.medicines;
+    const names = medicines.map((m) => String(m).trim()).filter(Boolean);
+    if (names.length === 0) throw new AppError('Enter at least one medicine name', 400);
+    return searchMedicineResults(names);
   }
-  if (names.length === 0) throw new AppError('Enter at least one medicine name', 400);
 
-  const { facilities } = await facilityOwnerService.findFacilitiesWithMedicines(names);
+  const parts = splitMedicineText(medicineText);
+  if (parts.length === 0) throw new AppError('Enter at least one medicine name', 400);
 
-  return {
-    medicines: names,
-    facilities,
-    message: facilities.length > 0
-      ? `Found ${facilities.length} facilit${facilities.length === 1 ? 'y' : 'ies'} with your medicine${names.length > 1 ? 's' : ''} in stock`
-      : 'No facilities currently list these medicines in stock — try a different name or call ahead',
-  };
+  const { resolved, prompts, unrecognized } = await resolveMedicineInputs(parts);
+
+  if (prompts.length > 0) {
+    return {
+      status: 'confirm',
+      prompts,
+      resolved,
+      message: 'Please confirm the medicine names below before we search.',
+    };
+  }
+
+  if (unrecognized.length > 0) {
+    return {
+      status: 'unrecognized',
+      unrecognized,
+      message: `We couldn't recognize: ${unrecognized.join(', ')}. Please check the spelling and enter the correct medicine name.`,
+    };
+  }
+
+  return searchMedicineResults(resolved);
 };
 
-const getHistory = async (userId, { page = 1, limit = 10 }) => {
-  const offset = (page - 1) * limit;
-  const { rows, count } = await TriageSession.findAndCountAll({
-    where: { userId },
-    order: [['createdAt', 'DESC']],
-    limit,
-    offset,
-  });
-  return { sessions: rows, total: count, page, limit };
-};
-
-module.exports = { analyzeSymptoms, analyzePublicSymptoms, findPublicMedicines, getHistory };
+module.exports = { analyzePublicSymptoms, findPublicMedicines };

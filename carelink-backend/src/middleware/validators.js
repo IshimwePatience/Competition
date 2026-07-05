@@ -90,6 +90,10 @@ const findMedicinesRules = [
   }),
 ];
 
+const adminAiRules = [
+  body('question').trim().isLength({ min: 3, max: 2000 }).withMessage('Ask a question (3-2000 chars)'),
+];
+
 const stockRules = [
   body('medicineStock').isArray().withMessage('Medicine stock must be an array'),
   body('medicineStock.*.name').trim().notEmpty(),
@@ -104,6 +108,7 @@ module.exports = {
   facilityRegisterRules,
   publicTriageRules,
   findMedicinesRules,
+  adminAiRules,
   stockRules,
   triageRules,
   facilityCreateRules,

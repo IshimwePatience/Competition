@@ -3,16 +3,22 @@ import Logo from '../Logo';
 import { useAuth } from '../../context/AuthContext';
 
 const baseNavItems = [
-  { id: 'triage', label: 'AI Triage', icon: 'M12 4v16m8-8H4' },
   { id: 'facilities', label: 'My Facilities', icon: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z' },
   { id: 'reports', label: 'My Reports', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
 ];
 
-const adminNavItem = {
-  id: 'users',
-  label: 'Platform Users',
-  icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z',
-};
+const adminNavItems = [
+  {
+    id: 'admin-ai',
+    label: 'Admin AI',
+    icon: 'M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z',
+  },
+  {
+    id: 'users',
+    label: 'Platform Users',
+    icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z',
+  },
+];
 
 const facilityNavItems = [
   {
@@ -89,7 +95,7 @@ export default function Sidebar({ activeTab, onTabChange }) {
   const navItems = user?.role === 'facility'
     ? facilityNavItems
     : user?.role === 'admin'
-      ? [...baseNavItems, adminNavItem]
+      ? [...adminNavItems, ...baseNavItems]
       : baseNavItems;
 
   return (
