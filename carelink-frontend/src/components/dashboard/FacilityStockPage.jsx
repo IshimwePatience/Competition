@@ -130,12 +130,12 @@ export default function FacilityStockPage({ onCountChange }) {
 
   return (
     <div className="flex min-h-full flex-col bg-white">
-      <div className="px-8 pt-6">
-        <div className="flex items-start justify-between">
+      <div className="px-6 py-4">
+        <div className="flex items-center justify-between">
           <div>
-            <p className="text-[12px] text-gray-400">Dashboard / Stock</p>
-            <h1 className="mt-1 text-[28px] font-bold leading-tight text-gray-900">Medicine Stock</h1>
-            <p className="mt-1 text-[14px] text-gray-400">
+            <p className="text-xs text-gray-400">Dashboard / Stock</p>
+            <h1 className="text-xl font-bold text-gray-900">Medicine Stock</h1>
+            <p className="mt-1 text-sm text-gray-500">
               List all medicines you carry — patients rely on this data
             </p>
           </div>

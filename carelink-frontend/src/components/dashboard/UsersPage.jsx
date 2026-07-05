@@ -118,15 +118,14 @@ export default function UsersPage() {
   return (
     <div className="flex min-h-full flex-col bg-white">
       {/* Header */}
-      <div className="px-8 pt-6">
-        <div className="flex items-start justify-between">
+      <div className="px-6 py-4">
+        <div className="flex items-center justify-between">
           <div>
-            <p className="text-[12px] text-gray-400">Dashboard / Users</p>
-            <h1 className="mt-1 text-[28px] font-bold leading-tight text-gray-900">Platform Users</h1>
+            <p className="text-xs text-gray-400">Dashboard / Users</p>
+            <h1 className="text-xl font-bold text-gray-900">Platform Users</h1>
           </div>
           <NotificationBell />
         </div>
-
       </div>
 
       {/* Toolbar */}
