@@ -5,6 +5,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Landing from './pages/Landing';
 import Dashboard from './pages/Dashboard';
 import SymptomTriagePage from './pages/SymptomTriagePage';
+import WandaaChat from './components/WandaaChat';
 
 export default function App() {
   return (
@@ -24,6 +25,7 @@ export default function App() {
             />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          <WandaaChat />
         </NotificationProvider>
       </AuthProvider>
     </BrowserRouter>
