@@ -1,8 +1,8 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const config = require('../config');
-const { TriageSession } = require('../models');
 const AppError = require('../utils/AppError');
 const facilityOwnerService = require('./facilityOwnerService');
+const { logPublicUsage } = require('./publicUsageService');
 const { COMMON_MEDICINES } = require('../constants/medicines');
 
 const MEDICINE_NORMALIZE_PROMPT = `You help match medicine names patients were told to find at a pharmacy.
@@ -125,33 +125,6 @@ const runTriageAI = async (symptomsText) => {
   return { result, aiRawResponse, usedFallback };
 };
 
-const analyzeSymptoms = async (userId, symptoms) => {
-  if (!symptoms?.trim()) throw new AppError('Symptoms description is required', 400);
-
-  const { result, aiRawResponse, usedFallback } = await runTriageAI(symptoms);
-
-  const session = await TriageSession.create({
-    userId,
-    symptoms,
-    urgency: result.urgency,
-    recommendedFacility: result.recommendedFacility,
-    likelyMedicineCategory: result.likelyMedicineCategory,
-    reason: result.reason,
-    aiRawResponse: { ...aiRawResponse, usedFallback },
-  });
-
-  const { emitToUser } = require('./socketService');
-  emitToUser(userId, 'triage:complete', {
-    sessionId: session.id,
-    urgency: result.urgency,
-    recommendedFacility: result.recommendedFacility,
-    likelyMedicineCategory: result.likelyMedicineCategory,
-    reason: result.reason,
-  });
-
-  return session;
-};
-
 const analyzePublicSymptoms = async ({ symptoms, latitude, longitude }) => {
   const list = Array.isArray(symptoms) ? symptoms : [symptoms];
   const cleaned = list.map((s) => String(s).trim()).filter(Boolean);
@@ -178,6 +151,13 @@ const analyzePublicSymptoms = async ({ symptoms, latitude, longitude }) => {
       medicineCategory: result.likelyMedicineCategory,
     });
   }
+
+  await logPublicUsage('symptoms', {
+    symptoms: cleaned,
+    urgency: result.urgency,
+    recommendedFacility: result.recommendedFacility,
+    likelyMedicineCategory: result.likelyMedicineCategory,
+  });
 
   return {
     symptoms: cleaned,
@@ -249,6 +229,8 @@ const findPublicMedicines = async ({ medicines, medicineText }) => {
 
   const { facilities } = await facilityOwnerService.findFacilitiesWithMedicines(names);
 
+  await logPublicUsage('medicine_search', { medicines: names, matchCount: facilities.length });
+
   return {
     medicines: names,
     facilities,
@@ -258,15 +240,4 @@ const findPublicMedicines = async ({ medicines, medicineText }) => {
   };
 };
 
-const getHistory = async (userId, { page = 1, limit = 10 }) => {
-  const offset = (page - 1) * limit;
-  const { rows, count } = await TriageSession.findAndCountAll({
-    where: { userId },
-    order: [['createdAt', 'DESC']],
-    limit,
-    offset,
-  });
-  return { sessions: rows, total: count, page, limit };
-};
-
-module.exports = { analyzeSymptoms, analyzePublicSymptoms, findPublicMedicines, getHistory };
+module.exports = { analyzePublicSymptoms, findPublicMedicines };

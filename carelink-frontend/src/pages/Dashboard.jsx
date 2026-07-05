@@ -5,68 +5,51 @@ import { api } from '../api/client';
 import Sidebar from '../components/layout/Sidebar';
 import Topbar from '../components/layout/Topbar';
 import ToastStack from '../components/ToastStack';
-import AITriagePage from '../components/dashboard/AITriagePage';
 import FacilitiesPage from '../components/dashboard/FacilitiesPage';
 import ReportsPage from '../components/dashboard/ReportsPage';
 import UsersPage from '../components/dashboard/UsersPage';
+import AdminAIPage from '../components/dashboard/AdminAIPage';
 import FacilityProfilePage from '../components/dashboard/FacilityProfilePage';
 import FacilityStockPage from '../components/dashboard/FacilityStockPage';
 import RoleGuard from '../components/RoleGuard';
 
 const PAGE_META = {
-  triage: { title: 'AI Triage', subtitle: 'Health Agent' },
   facilities: { title: 'My Facilities', subtitle: 'Facilities' },
   reports: { title: 'My Reports', subtitle: 'Reports' },
   users: { title: 'Platform Users', subtitle: 'Users' },
+  'admin-ai': { title: 'Admin AI', subtitle: 'Insights' },
   'facility-profile': { title: 'Facility Profile', subtitle: 'Profile' },
   'facility-stock': { title: 'Medicine Stock', subtitle: 'Stock' },
+};
+
+const defaultTabForRole = (role) => {
+  if (role === 'facility') return 'facility-stock';
+  if (role === 'admin') return 'admin-ai';
+  return 'facilities';
 };
 
 export default function Dashboard() {
   const { role } = useAuth();
   const isFacility = role === 'facility';
-  const [activeTab, setActiveTab] = useState(isFacility ? 'facility-stock' : 'triage');
-  const [symptoms, setSymptoms] = useState('');
-  const [triageResult, setTriageResult] = useState(null);
-  const [triageLoading, setTriageLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState(defaultTabForRole(role));
   const [reportFacility, setReportFacility] = useState(null);
   const [reportForm, setReportForm] = useState({ isOpen: true, waitTimeMinutes: 15, crowdLevel: 'moderate', notes: '' });
-  const [credits, setCredits] = useState(0);
   const [stockCount, setStockCount] = useState(0);
 
-  const meta = PAGE_META[activeTab] || PAGE_META.triage;
+  const meta = PAGE_META[activeTab] || PAGE_META.facilities;
 
   useEffect(() => {
-    if (role === 'facility') setActiveTab('facility-stock');
+    setActiveTab(defaultTabForRole(role));
   }, [role]);
-
-  useEffect(() => {
-    if (!isFacility) {
-      api.creditBalance().then((r) => setCredits(r.data.balance)).catch(() => {});
-    }
-  }, [isFacility]);
 
   if (role === 'user') {
     return <Navigate to="/symptoms" replace />;
   }
 
-  const runTriage = async () => {
-    if (!symptoms.trim()) return;
-    setTriageLoading(true);
-    try {
-      const res = await api.triageAnalyze(symptoms);
-      setTriageResult(res.data);
-    } finally {
-      setTriageLoading(false);
-    }
-  };
-
   const submitReport = async () => {
     if (!reportFacility) return;
     await api.submitReport(reportFacility.id, reportForm);
     setReportFacility(null);
-    const r = await api.creditBalance();
-    setCredits(r.data.balance);
   };
 
   return (
@@ -89,17 +72,6 @@ export default function Dashboard() {
             <FacilityStockPage onCountChange={setStockCount} />
           )}
 
-          {!isFacility && activeTab === 'triage' && (
-            <AITriagePage
-              symptoms={symptoms}
-              setSymptoms={setSymptoms}
-              triageResult={triageResult}
-              triageLoading={triageLoading}
-              credits={credits}
-              onRunTriage={runTriage}
-            />
-          )}
-
           {!isFacility && activeTab === 'facilities' && (
             <FacilitiesPage onReport={setReportFacility} />
           )}
@@ -111,6 +83,12 @@ export default function Dashboard() {
           {!isFacility && activeTab === 'users' && (
             <RoleGuard roles={['admin']}>
               <UsersPage />
+            </RoleGuard>
+          )}
+
+          {!isFacility && activeTab === 'admin-ai' && (
+            <RoleGuard roles={['admin']}>
+              <AdminAIPage />
             </RoleGuard>
           )}
         </main>

@@ -17,6 +17,7 @@ const FacilityReport = require('./FacilityReport')(sequelize);
 const TriageSession = require('./TriageSession')(sequelize);
 const HealthCredit = require('./HealthCredit')(sequelize);
 const Notification = require('./Notification')(sequelize);
+const PublicUsageLog = require('./PublicUsageLog')(sequelize);
 
 // User associations
 User.hasMany(FacilityReport, { foreignKey: 'userId', as: 'reports' });
@@ -45,4 +46,5 @@ module.exports = {
   TriageSession,
   HealthCredit,
   Notification,
+  PublicUsageLog,
 };

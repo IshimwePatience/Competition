@@ -131,7 +131,6 @@ export default function AdminWidgets({ page = 'facilities' }) {
     { label: 'Facilities', value: analytics.totals.facilities },
     { label: 'Open Now', value: analytics.totals.openFacilities },
     { label: 'Pending Reports', value: analytics.totals.pendingReports },
-    { label: 'Triage Sessions', value: analytics.totals.triageSessions },
     { label: 'Credits Issued', value: analytics.totals.creditsIssued },
   ];
 

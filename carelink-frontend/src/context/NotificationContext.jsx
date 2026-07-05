@@ -50,9 +50,6 @@ export function NotificationProvider({ children }) {
     };
 
     s.on('notification:new', handleNotification);
-    s.on('triage:complete', (data) => {
-      addToast({ title: 'Triage Complete', message: `${data.urgency} urgency — visit a ${data.recommendedFacility}`, type: 'triage' });
-    });
     s.on('credit:earned', (data) => {
       addToast({ title: 'Credits Earned', message: `+${data.amount} health credits`, type: 'credit' });
     });
