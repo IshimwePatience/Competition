@@ -1,6 +1,3 @@
-import RoleGuard from '../RoleGuard';
-import AdminWidgets from './AdminWidgets';
-
 export default function AITriagePage({
   symptoms,
   setSymptoms,
@@ -55,10 +52,6 @@ export default function AITriagePage({
           </div>
         )}
       </div>
-
-      <RoleGuard roles={['admin']}>
-        <AdminWidgets page="triage" />
-      </RoleGuard>
     </div>
   );
 }

@@ -1,8 +1,8 @@
 export function TablePanel({ title, subtitle, count, children, className = '' }) {
   return (
-    <div className={`rounded-2xl border border-gray-100 bg-white shadow-sm ${className}`}>
+    <div className={className}>
       {(title || subtitle || count != null) && (
-        <div className="flex items-start justify-between border-b border-gray-100 px-6 py-5">
+        <div className="mb-4 flex items-start justify-between">
           <div>
             {title && <h2 className="text-[18px] font-bold text-gray-900">{title}</h2>}
             {subtitle && <p className="mt-1 text-[13px] text-gray-500">{subtitle}</p>}
@@ -12,7 +12,7 @@ export function TablePanel({ title, subtitle, count, children, className = '' })
           )}
         </div>
       )}
-      <div className="px-6 py-4">{children}</div>
+      {children}
     </div>
   );
 }

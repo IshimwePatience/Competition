@@ -65,7 +65,7 @@ export default function Dashboard() {
           />
         )}
 
-        <main className={`flex-1 overflow-y-auto ${activeTab === 'users' ? 'bg-white' : 'bg-gray-50/50 px-6 py-6'}`}>
+        <main className={`flex-1 overflow-y-auto bg-white ${activeTab === 'users' ? '' : 'px-8 py-6'}`}>
           {activeTab === 'triage' && (
             <AITriagePage
               symptoms={symptoms}

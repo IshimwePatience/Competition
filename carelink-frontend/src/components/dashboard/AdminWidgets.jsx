@@ -29,7 +29,6 @@ export default function AdminWidgets({ page = 'facilities' }) {
   const [pendingReports, setPendingReports] = useState([]);
   const [facilities, setFacilities] = useState([]);
   const [form, setForm] = useState(defaultFacilityForm());
-  const [campaign, setCampaign] = useState({ title: '', message: '' });
   const [msg, setMsg] = useState('');
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState('');
@@ -136,23 +135,6 @@ export default function AdminWidgets({ page = 'facilities' }) {
     }
   };
 
-  const sendCampaign = async () => {
-    if (!campaign.title.trim() || !campaign.message.trim()) {
-      flash('Campaign title and message are required');
-      return;
-    }
-    setBusy('campaign');
-    try {
-      const res = await api.createCampaign(campaign);
-      flash(`Campaign sent to ${res.data.count} users`);
-      setCampaign({ title: '', message: '' });
-    } catch (err) {
-      flash(err.message || 'Failed to send campaign');
-    } finally {
-      setBusy('');
-    }
-  };
-
   const useMyLocation = () => {
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
@@ -163,7 +145,7 @@ export default function AdminWidgets({ page = 'facilities' }) {
 
   if (loading) {
     return (
-      <div className="flex h-48 items-center justify-center rounded-2xl border border-gray-100 bg-white">
+      <div className="flex h-48 items-center justify-center">
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
       </div>
     );
@@ -175,7 +157,6 @@ export default function AdminWidgets({ page = 'facilities' }) {
   const showReports = page === 'reports';
   const showFacilities = page === 'facilities';
   const showWorkers = page === 'facilities';
-  const showCampaign = page === 'triage';
   const showBreakdown = page === 'facilities' || page === 'reports';
 
   const stats = [
@@ -188,41 +169,41 @@ export default function AdminWidgets({ page = 'facilities' }) {
   ];
 
   return (
-    <div className="space-y-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-      {page !== 'triage' && <h3 className="text-sm font-bold text-gray-900">Admin Panel</h3>}
-      {msg && <p className="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600">{msg}</p>}
+    <div className="space-y-8">
+      <h3 className="text-[18px] font-bold text-gray-900">Admin Panel</h3>
+      {msg && <p className="text-[12px] text-gray-500">{msg}</p>}
 
       {showStats && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-6">
           {stats.map((s) => (
-            <div key={s.label} className="rounded-xl bg-white p-3 shadow-sm">
-              <p className="text-xs text-gray-400">{s.label}</p>
-              <p className="text-xl font-bold">{s.value}</p>
+            <div key={s.label}>
+              <p className="text-[12px] text-gray-400">{s.label}</p>
+              <p className="mt-1 text-[24px] font-bold text-gray-900">{s.value}</p>
             </div>
           ))}
         </div>
       )}
 
       {showBreakdown && (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-xl bg-white p-3 shadow-sm">
-            <p className="mb-2 text-xs font-semibold uppercase text-gray-500">Users by Role</p>
+        <div className="grid gap-8 sm:grid-cols-2">
+          <div>
+            <p className="mb-3 text-[13px] font-semibold text-gray-600">Users by Role</p>
             {(analytics.usersByRole || []).map((r) => (
-              <div key={r.role} className="flex justify-between text-sm">
+              <div key={r.role} className="flex justify-between border-b border-gray-100 py-2 text-[14px]">
                 <span className="capitalize text-gray-600">{r.role?.replace('_', ' ')}</span>
-                <span className="font-semibold">{r.count}</span>
+                <span className="font-semibold text-gray-900">{r.count}</span>
               </div>
             ))}
           </div>
-          <div className="rounded-xl bg-white p-3 shadow-sm">
-            <p className="mb-2 text-xs font-semibold uppercase text-gray-500">Facilities by Type</p>
+          <div>
+            <p className="mb-3 text-[13px] font-semibold text-gray-600">Facilities by Type</p>
             {(analytics.facilitiesByType || []).length === 0 ? (
-              <p className="text-sm text-gray-400">No facilities yet</p>
+              <p className="text-[14px] text-gray-400">No facilities yet</p>
             ) : (
               analytics.facilitiesByType.map((f) => (
-                <div key={f.type} className="flex justify-between text-sm">
+                <div key={f.type} className="flex justify-between border-b border-gray-100 py-2 text-[14px]">
                   <span className="capitalize text-gray-600">{f.type}</span>
-                  <span className="font-semibold">{f.count}</span>
+                  <span className="font-semibold text-gray-900">{f.count}</span>
                 </div>
               ))
             )}
@@ -389,18 +370,6 @@ export default function AdminWidgets({ page = 'facilities' }) {
             )}
           </TablePanel>
         </>
-      )}
-
-      {showCampaign && (
-        <div>
-          <p className="mb-2 text-xs font-semibold uppercase text-gray-500">Broadcast Campaign</p>
-          <p className="mb-2 text-xs text-gray-400">Send health alerts or screening announcements to all users</p>
-          <div className="space-y-2">
-            <input placeholder="Campaign title" value={campaign.title} onChange={(e) => setCampaign({ ...campaign, title: e.target.value })} className="w-full rounded-lg border px-3 py-2 text-sm" />
-            <textarea placeholder="Message to community..." value={campaign.message} onChange={(e) => setCampaign({ ...campaign, message: e.target.value })} rows={2} className="w-full rounded-lg border px-3 py-2 text-sm" />
-            <button type="button" disabled={busy === 'campaign'} onClick={sendCampaign} className="rounded-lg bg-gray-800 px-4 py-2 text-xs text-white disabled:opacity-50">Send to All Users</button>
-          </div>
-        </div>
       )}
     </div>
   );
