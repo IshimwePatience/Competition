@@ -2,11 +2,17 @@ import { useEffect, useRef, useState } from 'react';
 import Logo from '../Logo';
 import { useAuth } from '../../context/AuthContext';
 
-const navItems = [
+const baseNavItems = [
   { id: 'triage', label: 'AI Triage', icon: 'M12 4v16m8-8H4' },
   { id: 'facilities', label: 'My Facilities', icon: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z' },
   { id: 'reports', label: 'My Reports', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
 ];
+
+const adminNavItem = {
+  id: 'users',
+  label: 'Platform Users',
+  icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z',
+};
 
 function UserAvatarMenu() {
   const { user, logout } = useAuth();
@@ -66,6 +72,11 @@ function UserAvatarMenu() {
 }
 
 export default function Sidebar({ activeTab, onTabChange }) {
+  const { user } = useAuth();
+  const navItems = user?.role === 'admin'
+    ? [...baseNavItems, adminNavItem]
+    : baseNavItems;
+
   return (
     <aside className="fixed left-0 top-0 z-30 flex h-screen w-56 flex-col border-r border-gray-100 bg-brand-sidebar px-4 py-5">
       <div className="mb-8 px-2">

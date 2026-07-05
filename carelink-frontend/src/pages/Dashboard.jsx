@@ -7,11 +7,14 @@ import ToastStack from '../components/ToastStack';
 import AITriagePage from '../components/dashboard/AITriagePage';
 import FacilitiesPage from '../components/dashboard/FacilitiesPage';
 import ReportsPage from '../components/dashboard/ReportsPage';
+import UsersPage from '../components/dashboard/UsersPage';
+import RoleGuard from '../components/RoleGuard';
 
 const PAGE_META = {
   triage: { title: 'AI Triage', subtitle: 'Health Agent' },
   facilities: { title: 'My Facilities', subtitle: 'Facilities' },
   reports: { title: 'My Reports', subtitle: 'Reports' },
+  users: { title: 'Platform Users', subtitle: 'Users' },
 };
 
 export default function Dashboard() {
@@ -54,13 +57,15 @@ export default function Dashboard() {
       <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
       <div className="flex h-screen flex-col pl-56">
-        <Topbar
-          pageTitle={meta.title}
-          pageSubtitle={meta.subtitle}
-          showSearch={activeTab === 'facilities'}
-        />
+        {activeTab !== 'users' && (
+          <Topbar
+            pageTitle={meta.title}
+            pageSubtitle={meta.subtitle}
+            showSearch={activeTab === 'facilities'}
+          />
+        )}
 
-        <main className="flex-1 overflow-y-auto bg-gray-50/50 px-6 py-6">
+        <main className={`flex-1 overflow-y-auto ${activeTab === 'users' ? 'bg-white' : 'bg-gray-50/50 px-6 py-6'}`}>
           {activeTab === 'triage' && (
             <AITriagePage
               symptoms={symptoms}
@@ -78,6 +83,12 @@ export default function Dashboard() {
 
           {activeTab === 'reports' && (
             <ReportsPage />
+          )}
+
+          {activeTab === 'users' && (
+            <RoleGuard roles={['admin']}>
+              <UsersPage />
+            </RoleGuard>
           )}
         </main>
       </div>
