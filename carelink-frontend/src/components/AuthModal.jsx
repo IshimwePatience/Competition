@@ -208,20 +208,6 @@ export default function AuthModal({ mode: initialMode = 'register', accountType:
           </p>
         )}
 
-<<<<<<< HEAD
-        {mode === 'register' && step === 1 && !isFacility && (
-          <button
-            type="button"
-            onClick={handleGoogleLogin}
-            className="hidden mb-4 flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-          >
-            <GoogleIcon />
-            Sign in with Google
-          </button>
-        )}
-
-=======
->>>>>>> 71fa1b23f795bf7dc0efe66e6a1bc5eef2134ed1
         {error && (
           <div className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div>
         )}
