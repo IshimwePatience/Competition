@@ -36,7 +36,7 @@ const start = async () => {
       console.log(`WebSocket ready`);
     });
   } catch (err) {
-    console.error('Failed to start server:', err.message);
+    console.error('Failed to start server:', err);
     if (err.errors?.length) {
       err.errors.forEach((e) => console.error(`  - ${e.path}: ${e.message}`));
     }
